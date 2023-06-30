@@ -2,8 +2,7 @@
 
 Experimental app for detecting and displaying spoofed redirect servers on Steam.
 
-Suppported games: Rising Storm 2: Vietnam.
-
+Supported games: Rising Storm 2: Vietnam.
 
 # License
 
