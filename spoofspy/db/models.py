@@ -55,8 +55,18 @@ class AutomapModel(PrettyReprMixin, _AutomapBase):
     __abstract__ = True
 
 
-class Server(BaseModel):
-    __tablename__ = "server"
+class Settings(BaseModel):
+    """Application settings
+    - Steam server query parameters.
+        - Which gamedirs, addresses etc. to query.
+    - Other settings that have to be stored?
+    """
+    __tablename__ = "settings"
+
+
+class GameServer(BaseModel):
+    """Steam game server. Identified by IP:PORT."""
+    __tablename__ = "game_server"
 
 
 class TimescaleModel(BaseModel):
@@ -71,5 +81,11 @@ class TimescaleModel(BaseModel):
     )
 
 
-class ServerStateA2SRules(TimescaleModel):
-    pass
+class GameServerState(TimescaleModel):
+    """State(s) of queried server at given time.
+    - A2S Rules.
+    - A2S Info.
+    - A2S State.
+    - WebAPI based state(s).
+    """
+    __tablename__ = "game_server_state"
