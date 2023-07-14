@@ -2,14 +2,23 @@ import datetime
 from typing import Any
 
 import sqlalchemy
+from sqlalchemy import BigInteger
+from sqlalchemy import Boolean
+from sqlalchemy import CheckConstraint
 from sqlalchemy import DateTime
+from sqlalchemy import ForeignKeyConstraint
+from sqlalchemy import Integer
+from sqlalchemy import Text
 from sqlalchemy import inspect
+from sqlalchemy.dialects import postgresql
 from sqlalchemy.ext.automap import AutomapBase
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy.ext.mutable import MutableDict
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
+from sqlalchemy.orm import relationship
 
 
 class PrettyReprMixin:
@@ -31,6 +40,7 @@ class PrettyReprMixin:
 class BaseModel(PrettyReprMixin, DeclarativeBase):
     __abstract__ = True
 
+    # TODO: is this good?
     def to_dict(self) -> dict:
         d = {
             key: getattr(self, key)
@@ -55,23 +65,64 @@ class AutomapModel(PrettyReprMixin, _AutomapBase):
     __abstract__ = True
 
 
-class Settings(BaseModel):
-    """Application settings
+class QuerySettings(BaseModel):
+    """Application query settings
     - Steam server query parameters.
         - Which gamedirs, addresses etc. to query.
     - Other settings that have to be stored?
     """
-    __tablename__ = "settings"
+    __tablename__ = "query_settings"
+
+    id: Mapped[int] = mapped_column(
+        Integer,
+        autoincrement=True,
+        primary_key=True,
+        nullable=False,
+    )
+    name: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+    )
+    is_active: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+    )
+    # Steam server query filter key-value pairs.
+    query_params: Mapped[dict[str, str]] = mapped_column(
+        MutableDict.as_mutable(postgresql.HSTORE),
+        # nullable=True,
+    )
+
+    def query_params_str(self) -> str:
+        return f"\\".join(
+            f"{key}\\{value}"
+            for key, value in self.query_params.items()
+        )
 
 
 class GameServer(BaseModel):
     """Steam game server. Identified by IP:PORT."""
     __tablename__ = "game_server"
 
+    address = mapped_column(
+        postgresql.INET,
+        nullable=False,
+        primary_key=True,
+    )
+    port: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        primary_key=True,
+    )
+    CheckConstraint(
+        "0 <= port AND port <= 65353",
+        name="check_port_range",
+    )
+
 
 class TimescaleModel(BaseModel):
     """TimescaleDB hypertable."""
-
     __abstract__ = True
 
     time: Mapped[datetime.datetime] = mapped_column(
@@ -83,9 +134,54 @@ class TimescaleModel(BaseModel):
 
 class GameServerState(TimescaleModel):
     """State(s) of queried server at given time.
-    - A2S Rules.
     - A2S Info.
-    - A2S State.
+    - A2S Rules.
+    - A2S Players.
     - WebAPI based state(s).
     """
     __tablename__ = "game_server_state"
+
+    game_server_address = mapped_column(postgresql.INET)
+    game_server_port: Mapped[int] = mapped_column(Integer)
+    game_server: Mapped[GameServer] = relationship(
+        foreign_keys=[game_server_address, game_server_port],
+    )
+
+    # SourceInfo(protocol=17, server_name='-=PR=-GAMING #2 | LONG CAMPAIGN | LOW PING | PHANTOMREBELS.COM',
+    # map_name='VNTE-OperationForrest', folder='RS2', game='Rising Storm 2',
+    # app_id=0, player_count=48, max_players=64, bot_count=0, server_type='d', platform='w',
+    # password_protected=False, vac_enabled=True, version='1091', edf=177, port=7878,
+    # steam_id=90174253009032212, stv_port=None, stv_name=None,
+    # keywords='a64,r0,b1,e1,m1,v1,n1,o1,@1,#1,$1,w1,x1,y0,z1,f1,
+    # %0,h1,c0,d0,i1,g0,k100,&1,*0,t2,u0,p2,!2,^4,ladmin@phantomrebels.com,qg|,',
+    # game_id=418460, ping=0.1559999999590218)
+
+    # A2S info fields.
+    a2s_server_name: Mapped[str] = mapped_column(Text, nullable=True)
+    a2s_map_name: Mapped[str] = mapped_column(Text, nullable=True)
+    a2s_steam_id: Mapped[int] = mapped_column(BigInteger, nullable=True)
+    a2s_player_count: Mapped[int] = mapped_column(Integer, nullable=True)
+    a2s_max_players: Mapped[int] = mapped_column(Integer, nullable=True)
+    # Leftover fields in their raw format.
+    a2s_info: Mapped[dict[str, str]] = mapped_column(
+        MutableDict.as_mutable(postgresql.HSTORE),
+        nullable=True,
+    )
+
+    # A2S rules fields.
+    a2s_rules: Mapped[dict[str, str]] = mapped_column(
+        MutableDict.as_mutable(postgresql.HSTORE),
+        nullable=True,
+    )
+
+    # no point in storing the players in the db
+    # json, hstore, something else?
+    # A2S players fields.
+    # a2s_players:
+
+    __table__args = (
+        ForeignKeyConstraint(
+            [game_server_address, game_server_port],
+            [GameServer.address, GameServer.port],
+        )
+    )
