@@ -1,5 +1,6 @@
 import datetime
 from typing import Any
+from typing import List
 
 import sqlalchemy
 from sqlalchemy import BigInteger
@@ -14,7 +15,6 @@ from sqlalchemy.dialects import postgresql
 from sqlalchemy.ext.automap import AutomapBase
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.ext.hybrid import hybrid_property
-from sqlalchemy.ext.mutable import MutableDict
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
@@ -90,7 +90,7 @@ class QuerySettings(BaseModel):
     )
     # Steam server query filter key-value pairs.
     query_params: Mapped[dict[str, str]] = mapped_column(
-        MutableDict.as_mutable(postgresql.HSTORE),
+        postgresql.JSONB,
         # nullable=True,
     )
 
@@ -147,6 +147,11 @@ class GameServerState(TimescaleModel):
         foreign_keys=[game_server_address, game_server_port],
     )
 
+    # IGameServersService/GetServerList states.
+    addr: Mapped[str] = mapped_column(Text, nullable=True)
+    gameport: Mapped[int] = mapped_column(Integer, nullable=True)
+    steamid: Mapped[int] = mapped_column(BigInteger, nullable=True)
+
     # SourceInfo(protocol=17, server_name='-=PR=-GAMING #2 | LONG CAMPAIGN | LOW PING | PHANTOMREBELS.COM',
     # map_name='VNTE-OperationForrest', folder='RS2', game='Rising Storm 2',
     # app_id=0, player_count=48, max_players=64, bot_count=0, server_type='d', platform='w',
@@ -164,20 +169,36 @@ class GameServerState(TimescaleModel):
     a2s_max_players: Mapped[int] = mapped_column(Integer, nullable=True)
     # Leftover fields in their raw format.
     a2s_info: Mapped[dict[str, str]] = mapped_column(
-        MutableDict.as_mutable(postgresql.HSTORE),
+        postgresql.JSONB,
         nullable=True,
     )
 
     # A2S rules fields.
     a2s_rules: Mapped[dict[str, str]] = mapped_column(
-        MutableDict.as_mutable(postgresql.HSTORE),
+        postgresql.JSONB,
         nullable=True,
     )
 
-    # no point in storing the players in the db
-    # json, hstore, something else?
     # A2S players fields.
-    # a2s_players:
+    # Array of A2S player objects e.g.:
+    # [
+    #   {
+    #       "index": 0,
+    #       "name", "Player1",
+    #       "score": 40,
+    #       "duration": 0.00001,
+    #   },
+    #   {
+    #       "index": 0,
+    #       "name", "Ryan Gosling",
+    #       "score": -1,
+    #       "duration": 5.4501,
+    #   },
+    # ]
+    a2s_players: Mapped[List[dict[str, str]]] = mapped_column(
+        postgresql.ARRAY(postgresql.JSONB),
+        nullable=True,
+    )
 
     __table__args = (
         ForeignKeyConstraint(
