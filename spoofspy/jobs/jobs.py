@@ -7,6 +7,28 @@ app = Celery()
 def setup_periodic_tasks(sender: Celery, **kwargs):
     sender.add_periodic_task(5 * 60, get_steam_server_info.s())
 
+    # Periodically get query settings from DB, then:
+    # - Start periodic server discovery tasks for each query.
+    # - Server discovery task will add or update servers to the
+    #   servers table. Discovered servers are also queried for their
+    #   A2S and Steam Web API states.
+
+
+@app.task
+def get_query_settings():
+    pass
+    # TODO: need to be able to detect overlapping queries?
+    # For each query setting:
+    #   Fire server discovery query task:
+    #     For each discovered server:
+    #       Add/update server table.
+    #       Fire A2s and Web API state tasks.
+
+
+@app.task
+def discover_servers():
+    pass
+
 
 @app.task
 def get_steam_server_info():
