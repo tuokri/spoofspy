@@ -181,15 +181,6 @@ class GameServerState(TimescaleModel):
     os: Mapped[str] = mapped_column(Text, nullable=True)
     gametype: Mapped[str] = mapped_column(Text, nullable=True)
 
-    # SourceInfo(protocol=17, server_name='-=PR=-GAMING #2 | LONG CAMPAIGN | LOW PING | PHANTOMREBELS.COM',
-    # map_name='VNTE-OperationForrest', folder='RS2', game='Rising Storm 2',
-    # app_id=0, player_count=48, max_players=64, bot_count=0, server_type='d', platform='w',
-    # password_protected=False, vac_enabled=True, version='1091', edf=177, port=7878,
-    # steam_id=90174253009032212, stv_port=None, stv_name=None,
-    # keywords='a64,r0,b1,e1,m1,v1,n1,o1,@1,#1,$1,w1,x1,y0,z1,f1,
-    # %0,h1,c0,d0,i1,g0,k100,&1,*0,t2,u0,p2,!2,^4,ladmin@phantomrebels.com,qg|,',
-    # game_id=418460, ping=0.1559999999590218)
-
     # A2S info fields.
     a2s_server_name: Mapped[str] = mapped_column(Text, nullable=True)
     a2s_map_name: Mapped[str] = mapped_column(Text, nullable=True)
