@@ -23,11 +23,20 @@ _engine: Optional[Engine] = None
 _Session = TypeVar("_Session", bound=_ORMSession)
 
 
-def engine() -> Engine:
+def engine(force_reinit: bool = False) -> Engine:
     global _pool
     global _engine
 
     connect_args = {}
+
+    # TODO: should this only exist for dev env?
+    if force_reinit:
+        _engine.dispose(True)
+        _pool.close()
+        del _engine
+        del _pool
+        _engine = None
+        _pool = None
 
     if _pool is None:
         db_url = os.environ.get("DATABASE_URL")

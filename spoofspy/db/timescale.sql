@@ -1,7 +1,7 @@
 -- TimescaleDB table initialization, mainly for
--- development environments.
-CREATE
-    EXTENSION IF NOT EXISTS timescaledb;
+-- development environments or first time production
+-- database initialization.
+CREATE EXTENSION IF NOT EXISTS timescaledb;
 
 DROP TABLE IF EXISTS "game_server_state";
 

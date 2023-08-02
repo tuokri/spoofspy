@@ -115,9 +115,17 @@ class GameServer(BaseModel):
         nullable=False,
         primary_key=True,
     )
+    query_port: Mapped[int] = mapped_column(
+        Integer,
+        nullable=True,
+    )
     CheckConstraint(
-        "0 <= port AND port <= 65353",
+        "port BETWEEN 0 AND 65353",
         name="check_port_range",
+    )
+    CheckConstraint(
+        "(query_port BETWEEN 0 AND 65353) OR (query_port IS NULL)",
+        name="check_query_port_range",
     )
 
 
@@ -141,15 +149,22 @@ class GameServerState(TimescaleModel):
     """
     __tablename__ = "game_server_state"
 
-    game_server_address = mapped_column(postgresql.INET)
-    game_server_port: Mapped[int] = mapped_column(Integer)
+    game_server_address = mapped_column(
+        postgresql.INET,
+        nullable=False,
+    )
+    game_server_port: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+    )
     game_server: Mapped[GameServer] = relationship(
         foreign_keys=[game_server_address, game_server_port],
     )
 
     # IGameServersService/GetServerList state.
-    addr: Mapped[str] = mapped_column(Text, nullable=True)
-    gameport: Mapped[int] = mapped_column(Integer, nullable=True)
+    # IP address, game port and query port stored in GameServer.
+    # addr: Mapped[str] = mapped_column(Text, nullable=True)
+    # gameport: Mapped[int] = mapped_column(Integer, nullable=True)
     steamid: Mapped[int] = mapped_column(BigInteger, nullable=True)
     name: Mapped[str] = mapped_column(Text, nullable=True)
     appid: Mapped[int] = mapped_column(Integer, nullable=True)
