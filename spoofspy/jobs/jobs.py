@@ -24,3 +24,14 @@ def get_steam_server_info():
 #       - discover servers for the gamedir (ISteamApps/GetServersAtAddress)
 #       - start background jobs for each server
 #       -
+
+# Server discovery job. Discover servers based on database-stored
+# query settings. Discovery job runs periodically, updating the
+# server table.
+
+# Server query jobs. Launched by the server discovery job. Queries
+# individual servers, stores their states.
+
+# Should we only query servers discovered by the most recent discovery
+# job? Or should we also query past servers for a certain period before
+# "forgetting" about them?
