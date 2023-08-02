@@ -147,7 +147,7 @@ class GameServerState(TimescaleModel):
         foreign_keys=[game_server_address, game_server_port],
     )
 
-    # IGameServersService/GetServerList states.
+    # IGameServersService/GetServerList state.
     addr: Mapped[str] = mapped_column(Text, nullable=True)
     gameport: Mapped[int] = mapped_column(Integer, nullable=True)
     steamid: Mapped[int] = mapped_column(BigInteger, nullable=True)
