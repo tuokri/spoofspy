@@ -151,6 +151,20 @@ class GameServerState(TimescaleModel):
     addr: Mapped[str] = mapped_column(Text, nullable=True)
     gameport: Mapped[int] = mapped_column(Integer, nullable=True)
     steamid: Mapped[int] = mapped_column(BigInteger, nullable=True)
+    name: Mapped[str] = mapped_column(Text, nullable=True)
+    appid: Mapped[int] = mapped_column(Integer, nullable=True)
+    gamedir: Mapped[str] = mapped_column(Text, nullable=True)
+    version: Mapped[str] = mapped_column(Text, nullable=True)
+    product: Mapped[str] = mapped_column(Text, nullable=True)
+    region: Mapped[int] = mapped_column(Integer, nullable=True)
+    players: Mapped[int] = mapped_column(Integer, nullable=True)
+    max_players: Mapped[int] = mapped_column(Integer, nullable=True)
+    bots: Mapped[int] = mapped_column(Integer, nullable=True)
+    map: Mapped[str] = mapped_column(Text, nullable=True)
+    secure: Mapped[bool] = mapped_column(Boolean, nullable=True)
+    dedicated: Mapped[bool] = mapped_column(Boolean, nullable=True)
+    os: Mapped[str] = mapped_column(Text, nullable=True)
+    gametype: Mapped[str] = mapped_column(Text, nullable=True)
 
     # SourceInfo(protocol=17, server_name='-=PR=-GAMING #2 | LONG CAMPAIGN | LOW PING | PHANTOMREBELS.COM',
     # map_name='VNTE-OperationForrest', folder='RS2', game='Rising Storm 2',
