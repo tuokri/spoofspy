@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 from typing import Any
 from typing import Optional
 from typing import TypeVar
@@ -86,12 +87,11 @@ def drop_create_all(db_engine: Optional[Engine] = None):
     BaseModel.metadata.drop_all(db_engine)
     BaseModel.metadata.create_all(db_engine)
 
-    # TODO:
-    # with Session() as s, s.begin():
-    #     _timescale_sql = (
-    #             Path(__file__).parent / "timescale.sql").read_text()
-    #     _c = s.connection().connection.cursor()
-    #     _c.execute(_timescale_sql)
+    with Session() as s, s.begin():
+        _timescale_sql = (
+                Path(__file__).parent / "timescale.sql").read_text()
+        _c = s.connection().connection.cursor()
+        _c.execute(_timescale_sql)
 
     if not AutomapModel.classes:
         AutomapModel.prepare(autoload_with=db_engine)
