@@ -161,3 +161,9 @@ cython_debug/
 
 # Hatch dynamic version file
 spoofspy/_version.py
+
+# Celery
+celerybeat-schedule.*
+
+# pyenv
+.python-version

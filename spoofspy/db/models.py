@@ -1,4 +1,5 @@
 import datetime
+import ipaddress
 from typing import Any
 from typing import List
 
@@ -105,7 +106,8 @@ class GameServer(BaseModel):
     """Steam game server. Identified by IP:PORT."""
     __tablename__ = "game_server"
 
-    address = mapped_column(
+    # TODO: common base class to allow both IPv4 and IPv6?
+    address: Mapped[ipaddress.IPv4Address] = mapped_column(
         postgresql.INET,
         nullable=False,
         primary_key=True,
