@@ -66,6 +66,28 @@ class AutomapModel(PrettyReprMixin, _AutomapBase):
     __abstract__ = True
 
 
+class QueryStatistics(BaseModel):
+    __tablename__ = "query_statistics"
+
+    id: Mapped[bool] = mapped_column(
+        Boolean,
+        primary_key=True,
+        unique=True,
+        default=True,
+    )
+
+    steam_web_api_queries: Mapped[int] = mapped_column(
+        BigInteger,
+        default=0,
+        nullable=False,
+    )
+
+    # Enforce only a single row allowed.
+    CheckConstraint(
+        "id CHECK (id)"
+    )
+
+
 class QuerySettings(BaseModel):
     """Application query settings
     - Steam server query parameters.

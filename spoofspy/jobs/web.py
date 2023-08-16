@@ -11,10 +11,11 @@ import orjson
 SSL_CONTEXT = ssl.create_default_context()
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class GameServerResult:
     addr: str
     gameport: int
+    query_port: int
     steamid: Optional[int] = None
     name: Optional[str] = None
     appid: Optional[int] = None
@@ -42,6 +43,7 @@ class SteamWebAPI:
 
     def __init__(self, key: str):
         self._key = key
+        # TODO: redact sensitive information from httpx logs.
         self._client = httpx.Client(verify=SSL_CONTEXT)
 
     def __del__(self):
@@ -75,9 +77,13 @@ class SteamWebAPI:
         resp = self._client.get(url)
         self.api_requests += 1
         servers = orjson.loads(resp.content)["response"]["servers"]
-        return [
-            GameServerResult(
-                addr=server["addr"],
+
+        ret = []
+        for server in servers:
+            addr, query_port = server["addr"].split(":")
+            gsr = GameServerResult(
+                addr=addr,
+                query_port=int(query_port),
                 gameport=server["gameport"],
                 steamid=server.get("steamid", None),
                 name=server.get("name", None),
@@ -94,5 +100,7 @@ class SteamWebAPI:
                 dedicated=server.get("dedicated", None),
                 os=server.get("os", None),
                 gametype=server.get("gametype", None),
-            ) for server in servers
-        ]
+            )
+            ret.append(gsr)
+
+        return ret
