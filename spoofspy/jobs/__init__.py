@@ -1,7 +1,11 @@
-from .jobs import app
-from .jobs import beat_app
+from . import a2s_tasks
+from . import app
+from . import serializer
+from . import tasks
 
 __all__ = [
+    "a2s_tasks",
     "app",
-    "beat_app",
+    "serializer",
+    "tasks",
 ]

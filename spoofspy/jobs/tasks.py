@@ -1,46 +1,35 @@
 import dataclasses
+import datetime
 import ipaddress
 import os
 import random
 from typing import Any
 from typing import Dict
-from typing import Tuple
+from typing import Optional
 
 from celery import Celery
 from sqlalchemy import select
 
 from spoofspy import db
-from spoofspy.jobs import a2s
-from spoofspy.jobs.web import GameServerResult
-from spoofspy.jobs.web import SteamWebAPI
-
-REDIS_URL = os.environ["REDIS_URL"]
-app = Celery(
-    "app",
-    backend=REDIS_URL,
-    broker=REDIS_URL,
-    broker_connection_retry_on_startup=True,
-)
-beat_app = Celery(
-    "beat_app",
-    backend=REDIS_URL,
-    broker=REDIS_URL,
-    broker_connection_retry_on_startup=True,
-)
-
-webapi = SteamWebAPI(key=os.environ["STEAM_WEB_API_KEY"])
+from spoofspy.jobs import a2s_tasks
+from spoofspy.jobs.app import app
+from spoofspy.web import GameServerResult
+from spoofspy.web import SteamWebAPI
 
 DISCOVER_DELAY_MIN = 0.0
 DISCOVER_DELAY_MAX = 10.0
 
-
-# class BaseTask(Task):
-#     def on_failure(self, exc, task_id, args, kwargs, einfo):
-#         logger.exception("task failed", exc_info=exc)
-#         super().on_failure(exc, task_id, args, kwargs, einfo)
+_webapi: Optional[SteamWebAPI] = None
 
 
-@beat_app.on_after_configure.connect
+def webapi() -> SteamWebAPI:
+    global _webapi
+    if _webapi is None:
+        _webapi = SteamWebAPI(key=os.environ["STEAM_WEB_API_KEY"])
+    return _webapi
+
+
+@app.on_after_configure.connect
 def setup_periodic_tasks(sender: Celery, **kwargs):
     # sender.add_periodic_task(5 * 60, query_servers.s())
     sender.add_periodic_task(1 * 60, query_servers.s())
@@ -88,7 +77,7 @@ def discover_servers(query_params: Dict[str, str]):
     # Don't allow empty filters for now.
     query_filter = query_params["filter"]
     limit = query_params.get("limit", 0)
-    server_results = webapi.get_server_list(query_filter, limit)
+    server_results = webapi().get_server_list(query_filter, limit)
     # Update game_server table.
     #   - create new entries
     #   - update existing entries
@@ -111,42 +100,37 @@ def discover_servers(query_params: Dict[str, str]):
 @app.task(ignore_result=True)
 def query_server_state(server: Dict[str, Any]):
     gs_result = GameServerResult(**server)
-    addr = (gs_result.addr, gs_result.query_port)
-    # TODO: need better mechanism for handling this?
-    #  calling group().get() deadlocks.
-    # TODO: use separate workers for A2
-    # group = celery.group(
-    #     a2s_info.s(addr),
-    #     a2s_rules.s(addr),
-    #     a2s_players.s(addr),
-    # )
-    # Use sequential blocking calls for now.
-    info = a2s.server_info(addr)
-    rules = a2s.server_rules(addr)
-    players = a2s.server_players(addr)
+    a2s_addr = (gs_result.addr, gs_result.query_port)
+    gameport = gs_result.gameport
 
+    query_time = datetime.datetime.now(tz=datetime.timezone.utc)
 
-@app.task
-def a2s_info(addr: Tuple[str, int]):
-    addr = _coerce_tuple(addr)
-    return a2s.server_info(addr)
+    with db.Session.begin() as sess:
+        state = db.models.GameServerState(
+            time=query_time,
+            game_server_address=gs_result.addr,
+            game_server_port=gameport,
+            steamid=gs_result.steamid,
+            name=gs_result.name,
+            appid=gs_result.appid,
+            gamedir=gs_result.gamedir,
+            version=gs_result.version,
+            product=gs_result.product,
+            region=gs_result.region,
+            players=gs_result.players,
+            max_players=gs_result.max_players,
+            bots=gs_result.bots,
+            map=gs_result.map,
+            secure=gs_result.secure,
+            dedicated=gs_result.dedicated,
+            os=gs_result.os,
+            gametype=gs_result.gametype,
+        )
+        sess.merge(state)
 
-
-@app.task
-def a2s_rules(addr: Tuple[str, int]):
-    addr = _coerce_tuple(addr)
-    return a2s.server_rules(addr)
-
-
-@app.task
-def a2s_players(addr: Tuple[str, int]):
-    addr = _coerce_tuple(addr)
-    return a2s.server_players(addr)
-
-
-def _coerce_tuple(x) -> Tuple:
-    # Celery converts tuples to lists.
-    return x[0], x[1]
+    a2s_tasks.a2s_info.delay(a2s_addr, gameport, query_time)
+    a2s_tasks.a2s_rules.delay(a2s_addr, gameport, query_time)
+    a2s_tasks.a2s_players.delay(a2s_addr, gameport, query_time)
 
 # TODO: need task to be able to fetch information for
 #   selected servers based on some criteria. Separate
