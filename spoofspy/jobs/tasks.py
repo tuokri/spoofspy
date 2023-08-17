@@ -59,10 +59,10 @@ def query_servers():
 
 
 @app.task(ignore_result=True)
-def discover_servers(query_params: Dict[str, str]):
+def discover_servers(query_params: Dict[str, str | int]):
     # Don't allow empty filters for now.
-    query_filter = query_params["filter"]
-    limit = query_params.get("limit", 0)
+    query_filter = str(query_params["filter"])
+    limit = int(query_params.get("limit", 0))
     server_results = webapi().get_server_list(query_filter, limit)
 
     # TODO: drop old entries based on some criteria?

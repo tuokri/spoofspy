@@ -31,8 +31,10 @@ def engine(force_reinit: bool = False) -> Engine:
 
     # TODO: should this only exist for dev env?
     if force_reinit:
-        _engine.dispose(True)
-        _pool.close()
+        if _engine:
+            _engine.dispose(True)
+        if _pool:
+            _pool.close()
         del _engine
         del _pool
         _engine = None

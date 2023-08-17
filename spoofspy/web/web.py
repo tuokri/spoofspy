@@ -1,12 +1,16 @@
 import ssl
 from dataclasses import dataclass
-from typing import List
+from typing import Dict
+from typing import Generator
 from typing import Optional
 from urllib.parse import urlencode
 from urllib.parse import urlunparse
 
 import httpx
 import orjson
+from sqlalchemy import select
+
+from spoofspy import db
 
 SSL_CONTEXT = ssl.create_default_context()
 
@@ -48,16 +52,17 @@ class SteamWebAPI:
 
     def __del__(self):
         self._client.close()
+        self.store_stats()
 
     def get_server_list(
             self,
             query_filter: str = "",
             limit: int = 0,
-    ) -> List[GameServerResult]:
+    ) -> Generator[GameServerResult, None, None]:
         """IGameServersService/GetServerList
         TODO: error handling? Logging?
         """
-        params = {
+        params: Dict[str, str | int] = {
             "key": self._key,
         }
         if query_filter:
@@ -78,7 +83,6 @@ class SteamWebAPI:
         self.api_requests += 1
         servers = orjson.loads(resp.content)["response"]["servers"]
 
-        ret = []
         for server in servers:
             addr, query_port = server["addr"].split(":")
             gsr = GameServerResult(
@@ -101,6 +105,18 @@ class SteamWebAPI:
                 os=server.get("os", None),
                 gametype=server.get("gametype", None),
             )
-            ret.append(gsr)
+            yield gsr
 
-        return ret
+        self.store_stats()
+
+    def store_stats(self):
+        try:
+            with db.Session.begin() as sess:
+                stats = sess.scalar(
+                    select(db.models.QueryStatistics)
+                )
+                stats.steam_web_api_queries += self.api_requests
+                sess.merge(stats)
+        except Exception as e:
+            # TODO: logging
+            pass
