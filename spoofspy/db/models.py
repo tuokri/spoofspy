@@ -218,6 +218,20 @@ class GameServerState(TimescaleModel):
     )
 
     # A2S rules fields.
+    a2s_num_open_public_connections: Mapped[int] = mapped_column(
+        Integer,
+        nullable=True,
+    )
+    a2s_num_public_connections: Mapped[int] = mapped_column(
+        Integer,
+        nullable=True,
+    )
+    # Presumably "player info count"?
+    a2s_pi_count: Mapped[int] = mapped_column(
+        Integer,
+        nullable=True,
+    )
+    # Leftovers.
     a2s_rules: Mapped[dict[str, str]] = mapped_column(
         postgresql.JSONB,
         nullable=True,
