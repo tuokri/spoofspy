@@ -16,6 +16,7 @@ from sqlalchemy.schema import DropTable
 
 from spoofspy.db.models import AutomapModel
 from spoofspy.db.models import BaseModel
+from spoofspy.db.models import QueryStatistics
 
 _pool: Optional[ConnectionPool] = None
 _engine: Optional[Engine] = None
@@ -106,3 +107,6 @@ def drop_create_all(db_engine: Optional[Engine] = None):
 
     if not AutomapModel.classes:
         AutomapModel.prepare(autoload_with=db_engine)
+
+    with Session.begin() as sess:
+        sess.add(QueryStatistics())
