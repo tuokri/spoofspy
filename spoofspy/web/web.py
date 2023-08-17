@@ -110,6 +110,9 @@ class SteamWebAPI:
         self.store_stats()
 
     def store_stats(self):
+        if self.api_requests <= 0:
+            return
+
         try:
             with db.Session.begin() as sess:
                 stats = sess.scalar(
@@ -117,6 +120,7 @@ class SteamWebAPI:
                 )
                 stats.steam_web_api_queries += self.api_requests
                 sess.merge(stats)
+            self.api_requests = 0
         except Exception as e:
             # TODO: logging
             pass

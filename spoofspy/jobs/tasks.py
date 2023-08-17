@@ -63,7 +63,7 @@ def discover_servers(query_params: Dict[str, str | int]):
     # Don't allow empty filters for now.
     query_filter = str(query_params["filter"])
     limit = int(query_params.get("limit", 0))
-    server_results = webapi().get_server_list(query_filter, limit)
+    server_results = list(webapi().get_server_list(query_filter, limit))
 
     # TODO: drop old entries based on some criteria?
     with db.Session.begin() as sess:
