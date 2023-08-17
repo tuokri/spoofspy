@@ -53,3 +53,5 @@ CREATE TABLE "game_server_state"
 CREATE INDEX ON "game_server_state" (time DESC);
 
 SELECT create_hypertable('game_server_state', 'time');
+
+SELECT add_retention_policy('game_server_state', INTERVAL '3 months');
