@@ -24,7 +24,7 @@ classifiers = [
 dependencies = [
   "SQLAlchemy==2.0.19",
   "celery[redis]==5.3.1",
-  "fastapi==0.100.1",
+  "fastapi==0.101.1",
   "httpx==0.24.1",
   "msgpack==1.0.5",
   "orjson==3.9.4",
