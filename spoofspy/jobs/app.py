@@ -3,12 +3,12 @@ import os
 from celery import Celery
 from kombu.serialization import register
 
-from spoofspy.jobs import serializer
+from spoofspy.jobs import serialization
 
 register(
     "msgpack_dt",
-    serializer.dumps,
-    serializer.loads,
+    serialization.dumps,
+    serialization.loads,
     content_type="application/x-msgpack",
     content_encoding="utf-8",
 )
