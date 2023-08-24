@@ -47,11 +47,40 @@ def setup_periodic_tasks(sender: Celery, **kwargs):
     sender.add_periodic_task(QUERY_INTERVAL, query_servers.s())
     sender.add_periodic_task(EVAL_INTERVAL, eval_server_trust_scores.s())
 
+    # TODO: Also need an eval job that runs less often but checks old,
+    #   "missed" entries and evaluates them?
+
 
 @app.task
 def get_query_settings():
     pass
     # TODO: need to be able to detect overlapping queries?
+
+
+def _eval_trust_score(state: db.models.GameServerState) -> float:
+    """Evaluate server state trust score in range [0.0, 1.0].
+    1.0 is perfect score and 0.0 is the worst possible score.
+    """
+    score = 1.0
+
+    mp = state.max_players
+
+    if state.a2s_info_responded:
+        amp = state.a2s_max_players
+    else:
+        score -= 0.33
+
+    if state.a2s_rules_responded:
+        pass
+    else:
+        score -= 0.33
+
+    if state.a2s_players_responded:
+        pass
+    else:
+        score -= 0.33
+
+    return score
 
 
 @app.task(ignore_result=True)
@@ -60,13 +89,13 @@ def eval_server_trust_scores():
     #   ongoing A2S jobs?
     min_dt = datetime.datetime.now(tz=datetime.timezone.utc)
     min_dt -= datetime.timedelta(seconds=EVAL_INTERVAL * 2)
-    with db.Session() as sess:
+    with db.Session.begin() as sess:
         stmt = select(db.models.GameServerState).where(
             (db.models.GameServerState.time >= min_dt)
-            & (db.models.GameServerState.trust_score is None)
-            & (db.models.GameServerState.a2s_info_responded is not None)
-            & (db.models.GameServerState.a2s_rules_responded is not None)
-            & (db.models.GameServerState.a2s_players_responded is not None)
+            & (db.models.GameServerState.trust_score.is_(None))
+            & (db.models.GameServerState.a2s_info_responded.is_not(None))
+            & (db.models.GameServerState.a2s_rules_responded.is_not(None))
+            & (db.models.GameServerState.a2s_players_responded.is_not(None))
         ).options(
             load_only(
                 db.models.GameServerState.players,
@@ -83,6 +112,12 @@ def eval_server_trust_scores():
                 db.models.GameServerState.a2s_players,
             )
         )
+        states = sess.scalars(stmt)
+
+        for state in states:
+            trust_score = _eval_trust_score(state)
+            logger.info("%s: score: %s", state, trust_score)
+            sess.merge(state)
 
 
 @app.task(ignore_result=True)
