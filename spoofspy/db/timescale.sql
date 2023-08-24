@@ -45,6 +45,8 @@ CREATE TABLE "game_server_state"
     -- A2S players.
     a2s_players                     JSONB[],
 
+    trust_score                     REAL,
+
     CONSTRAINT fk_game_server
         FOREIGN KEY (game_server_address, game_server_port)
             REFERENCES game_server (address, port)

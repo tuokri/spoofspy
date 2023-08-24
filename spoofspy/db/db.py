@@ -1,3 +1,4 @@
+import atexit
 import os
 from pathlib import Path
 from typing import Any
@@ -16,12 +17,25 @@ from sqlalchemy.schema import DropTable
 
 from spoofspy.db.models import AutomapModel
 from spoofspy.db.models import BaseModel
+from spoofspy.db.models import QuerySettings
 from spoofspy.db.models import QueryStatistics
+
+_SPOOFSPY_DEBUG = os.environ.get("SPOOFSPY_DEBUG")
 
 _pool: Optional[ConnectionPool] = None
 _engine: Optional[Engine] = None
 
 _Session = TypeVar("_Session", bound=_ORMSession)
+
+
+def _close_pool():
+    if _engine:
+        _engine.dispose(True)
+    if _pool:
+        _pool.close()
+
+
+atexit.register(_close_pool)
 
 
 def engine(force_reinit: bool = False) -> Engine:
@@ -53,6 +67,7 @@ def engine(force_reinit: bool = False) -> Engine:
             )
             connect_args = {"prepare_threshold": None}
         else:
+            # Development env pool.
             _pool = ConnectionPool(
                 conninfo=db_url,
             )
@@ -79,11 +94,14 @@ def engine(force_reinit: bool = False) -> Engine:
 # noinspection PyPep8Naming
 class session_maker(sessionmaker):
     def __call__(self, **local_kw: Any) -> _ORMSession:
-        local_kw["bind"] = engine()
+        print(_pool.get_stats())
         return super().__call__(**local_kw)
 
 
-Session: sessionmaker = session_maker()
+if _SPOOFSPY_DEBUG:
+    Session: sessionmaker = session_maker(engine())
+else:
+    Session: sessionmaker = sessionmaker(engine())
 
 
 def drop_create_all(db_engine: Optional[Engine] = None):
@@ -110,3 +128,14 @@ def drop_create_all(db_engine: Optional[Engine] = None):
 
     with Session.begin() as sess:
         sess.add(QueryStatistics())
+
+    if _SPOOFSPY_DEBUG:
+        with Session.begin() as sess:
+            sess.add(QuerySettings(
+                name="test query",
+                is_active=True,
+                query_params={
+                    "filter": "\\gamedir\\rs2",
+                    "limit": 999,
+                }
+            ))

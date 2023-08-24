@@ -8,6 +8,7 @@ from sqlalchemy import BigInteger
 from sqlalchemy import Boolean
 from sqlalchemy import CheckConstraint
 from sqlalchemy import DateTime
+from sqlalchemy import Float
 from sqlalchemy import ForeignKeyConstraint
 from sqlalchemy import Integer
 from sqlalchemy import Text
@@ -255,6 +256,11 @@ class GameServerState(TimescaleModel):
     # ]
     a2s_players: Mapped[List[dict[str, str]]] = mapped_column(
         postgresql.ARRAY(postgresql.JSONB),
+        nullable=True,
+    )
+
+    trust_score: Mapped[float] = mapped_column(
+        Float,
         nullable=True,
     )
 
