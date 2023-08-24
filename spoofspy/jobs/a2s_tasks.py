@@ -156,6 +156,6 @@ def _coerce_tuple(x: Union[list, tuple]) -> Tuple:
 
 def _pop(d: dict, key: Any, default: Any = None) -> Any:
     try:
-        d.pop(key)
+        return d.pop(key)
     except KeyError:
         return default
