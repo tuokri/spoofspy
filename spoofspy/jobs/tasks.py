@@ -1,6 +1,7 @@
 import dataclasses
 import datetime
 import ipaddress
+import logging
 import os
 import random
 from typing import Any
@@ -8,7 +9,9 @@ from typing import Dict
 from typing import Optional
 
 from celery import Celery
+from celery.utils.log import get_task_logger
 from sqlalchemy import select
+from sqlalchemy.orm import load_only
 
 from spoofspy import db
 from spoofspy.jobs import a2s_tasks
@@ -21,6 +24,8 @@ DISCOVER_DELAY_MAX = 10.0
 
 _webapi: Optional[SteamWebAPI] = None
 
+logger: logging.Logger = get_task_logger(__name__)
+
 
 def webapi() -> SteamWebAPI:
     global _webapi
@@ -29,10 +34,18 @@ def webapi() -> SteamWebAPI:
     return _webapi
 
 
+if os.environ.get("SPOOFSPY_DEBUG"):
+    QUERY_INTERVAL = 1 * 60
+    EVAL_INTERVAL = (1 * 60) + 10
+else:
+    QUERY_INTERVAL = 5 * 60
+    EVAL_INTERVAL = (5 * 60) + 10
+
+
 @app.on_after_configure.connect
 def setup_periodic_tasks(sender: Celery, **kwargs):
-    # sender.add_periodic_task(5 * 60, query_servers.s())
-    sender.add_periodic_task(1 * 60, query_servers.s())
+    sender.add_periodic_task(QUERY_INTERVAL, query_servers.s())
+    sender.add_periodic_task(EVAL_INTERVAL, eval_server_trust_scores.s())
 
 
 @app.task
@@ -42,20 +55,55 @@ def get_query_settings():
 
 
 @app.task(ignore_result=True)
+def eval_server_trust_scores():
+    # TODO: need to be able to detect which rows have
+    #   ongoing A2S jobs?
+    min_dt = datetime.datetime.now(tz=datetime.timezone.utc)
+    min_dt -= datetime.timedelta(seconds=EVAL_INTERVAL)
+    with db.Session() as sess:
+        stmt = select(db.models.GameServerState).where(
+            (db.models.GameServerState.time >= min_dt) &
+            (db.models.GameServerState.trust_score is None)
+        ).options(
+            load_only(
+                db.models.GameServerState.players,
+                db.models.GameServerState.max_players,
+                db.models.GameServerState.a2s_info_responded,
+                db.models.GameServerState.a2s_player_count,
+                db.models.GameServerState.a2s_max_players,
+                db.models.GameServerState.a2s_rules_responded,
+                db.models.GameServerState.a2s_num_public_connections,
+                db.models.GameServerState.a2s_num_open_public_connections,
+                db.models.GameServerState.a2s_pi_count,
+                db.models.GameServerState.a2s_pi_objects,
+                db.models.GameServerState.a2s_players_responded,
+                db.models.GameServerState.a2s_players,
+            )
+        )
+
+
+@app.task(ignore_result=True)
 def query_servers():
     with db.Session() as sess:
         settings = sess.scalars(
             select(db.models.QuerySettings).where(
                 db.models.QuerySettings.is_active
+            ).options(
+                load_only(
+                    db.models.QuerySettings.query_params,
+                )
             )
         )
-        for setting in settings:
-            rand_delay = random.uniform(
-                DISCOVER_DELAY_MIN, DISCOVER_DELAY_MAX)
-            discover_servers.apply_async(
-                (setting.query_params,),
-                countdown=rand_delay,
-            )
+        qp = [s.query_params for s in settings]
+
+    for query_params in qp:
+        rand_delay = random.uniform(
+            DISCOVER_DELAY_MIN, DISCOVER_DELAY_MAX)
+        discover_servers.apply_async(
+            (query_params,),
+            countdown=rand_delay,
+            expires=QUERY_INTERVAL + rand_delay + 1,
+        )
 
 
 @app.task(ignore_result=True)
@@ -78,7 +126,10 @@ def discover_servers(query_params: Dict[str, str | int]):
     for sr in server_results:
         # TODO: dataclass is not JSON-serializable.
         #   Is there a better way to handle this?
-        query_server_state.delay(dataclasses.asdict(sr))
+        query_server_state.apply_async(
+            (dataclasses.asdict(sr),),
+            expires=QUERY_INTERVAL,
+        )
 
 
 @app.task(ignore_result=True)

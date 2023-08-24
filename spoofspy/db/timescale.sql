@@ -5,6 +5,7 @@ CREATE EXTENSION IF NOT EXISTS timescaledb;
 
 DROP TABLE IF EXISTS "game_server_state";
 
+-- Currently specific to Rising Storm 2: Vietnam.
 CREATE TABLE "game_server_state"
 (
     time                            TIMESTAMPTZ NOT NULL,
@@ -29,6 +30,7 @@ CREATE TABLE "game_server_state"
     gametype                        TEXT,
 
     -- A2S info.
+    a2s_info_responded              BOOLEAN,
     a2s_server_name                 TEXT,
     a2s_map_name                    TEXT,
     a2s_steam_id                    BIGINT,
@@ -37,12 +39,15 @@ CREATE TABLE "game_server_state"
     a2s_info                        JSONB,
 
     -- A2S rules.
+    a2s_rules_responded             BOOLEAN,
     a2s_num_open_public_connections INTEGER,
     a2s_num_public_connections      INTEGER,
     a2s_pi_count                    INTEGER,
+    a2s_pi_objects                  JSONB,
     a2s_rules                       JSONB,
 
     -- A2S players.
+    a2s_players_responded           BOOLEAN,
     a2s_players                     JSONB[],
 
     trust_score                     REAL,

@@ -207,6 +207,10 @@ class GameServerState(TimescaleModel):
     gametype: Mapped[str] = mapped_column(Text, nullable=True)
 
     # A2S info fields.
+    a2s_info_responded: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=True,
+    )
     a2s_server_name: Mapped[str] = mapped_column(Text, nullable=True)
     a2s_map_name: Mapped[str] = mapped_column(Text, nullable=True)
     a2s_steam_id: Mapped[int] = mapped_column(BigInteger, nullable=True)
@@ -219,6 +223,10 @@ class GameServerState(TimescaleModel):
     )
 
     # A2S rules fields.
+    a2s_rules_responded: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=True,
+    )
     a2s_num_open_public_connections: Mapped[int] = mapped_column(
         Integer,
         nullable=True,
@@ -230,6 +238,10 @@ class GameServerState(TimescaleModel):
     # Presumably "player info count"?
     a2s_pi_count: Mapped[int] = mapped_column(
         Integer,
+        nullable=True,
+    )
+    a2s_pi_objects: Mapped[dict[int, str]] = mapped_column(
+        postgresql.JSONB,
         nullable=True,
     )
     # Leftovers.
@@ -254,6 +266,10 @@ class GameServerState(TimescaleModel):
     #       "duration": 5.4501,
     #   },
     # ]
+    a2s_players_responded: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=True,
+    )
     a2s_players: Mapped[List[dict[str, str]]] = mapped_column(
         postgresql.ARRAY(postgresql.JSONB),
         nullable=True,

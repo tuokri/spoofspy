@@ -1,7 +1,9 @@
 import datetime
 import logging
 import socket
+from collections import defaultdict
 from typing import Any
+from typing import Dict
 from typing import Tuple
 from typing import Union
 
@@ -78,7 +80,7 @@ def a2s_rules(
         query_time: datetime.datetime,
 ):
     addr = _coerce_tuple(addr)
-    rules = {}
+    rules: Dict[str, str] = {}
 
     try:
         rules = a2s.rules(addr, timeout=A2S_TIMEOUT)
@@ -97,6 +99,37 @@ def a2s_rules(
     num_pub = _pop(rules, "NumPublicConnections")
     pi_count = _pop(rules, "PI_COUNT")
 
+    # TODO: refactor this loop into functions etc.
+    pi_objs = defaultdict(dict)
+    to_del = set()
+    ignore_idxs = set()
+    for key, value in rules.items():
+        if key.startswith("PI_"):
+            try:
+                idx = int(key.split("_")[-1])
+                to_del.add(key)
+            except ValueError:
+                continue
+
+            if idx in ignore_idxs:
+                continue
+
+            if key.startswith("PI_N_"):
+                # Name.
+                if value == "<<ChatLogger>>":
+                    ignore_idxs.add(idx)
+                    continue
+                pi_objs[idx]["n"] = value
+            elif key.startswith("PI_P_"):
+                # Platform.
+                pi_objs[idx]["p"] = value
+            elif key.startswith("PI_S_"):
+                # Score.
+                pi_objs[idx]["s"] = value
+
+    for key in to_del:
+        del rules[key]
+
     with db.Session.begin() as sess:
         state = db.models.GameServerState(
             time=query_time,
@@ -105,6 +138,7 @@ def a2s_rules(
             a2s_num_open_public_connections=num_open_pub,
             a2s_num_public_connections=num_pub,
             a2s_pi_count=pi_count,
+            a2s_pi_objects=pi_objs,
             a2s_rules=rules,
         )
         sess.merge(state)
