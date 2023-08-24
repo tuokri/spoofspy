@@ -40,8 +40,10 @@ def a2s_info(
     addr = _coerce_tuple(addr)
     info = {}
 
+    resp = False
     try:
         info = a2s.info(addr, timeout=A2S_TIMEOUT)
+        resp = True
     except known_a2s_errors as e:
         logger.error(
             "a2s_info error: %s %s %s: %s",
@@ -63,6 +65,7 @@ def a2s_info(
             time=query_time,
             game_server_address=addr[0],
             game_server_port=gameport,
+            a2s_info_responded=resp,
             a2s_server_name=_pop(info_fields, "server_name"),
             a2s_map_name=_pop(info_fields, "map_name"),
             a2s_steam_id=_pop(info_fields, "steam_id"),
@@ -82,8 +85,10 @@ def a2s_rules(
     addr = _coerce_tuple(addr)
     rules: Dict[str, str] = {}
 
+    resp = False
     try:
         rules = a2s.rules(addr, timeout=A2S_TIMEOUT)
+        resp = True
     except known_a2s_errors as e:
         logger.error(
             "a2s_rules error: %s %s %s: %s",
@@ -135,6 +140,7 @@ def a2s_rules(
             time=query_time,
             game_server_address=addr[0],
             game_server_port=gameport,
+            a2s_rules_responded=resp,
             a2s_num_open_public_connections=num_open_pub,
             a2s_num_public_connections=num_pub,
             a2s_pi_count=pi_count,
@@ -153,8 +159,10 @@ def a2s_players(
     addr = _coerce_tuple(addr)
     players = []
 
+    resp = False
     try:
         players = a2s.players(addr, timeout=A2S_TIMEOUT)
+        resp = True
     except known_a2s_errors as e:
         logger.error(
             "a2s_players error: %s %s %s: %s",
@@ -178,6 +186,7 @@ def a2s_players(
             time=query_time,
             game_server_address=addr[0],
             game_server_port=gameport,
+            a2s_players_responded=resp,
             a2s_players=players,
         )
         sess.merge(state)

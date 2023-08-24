@@ -59,11 +59,14 @@ def eval_server_trust_scores():
     # TODO: need to be able to detect which rows have
     #   ongoing A2S jobs?
     min_dt = datetime.datetime.now(tz=datetime.timezone.utc)
-    min_dt -= datetime.timedelta(seconds=EVAL_INTERVAL)
+    min_dt -= datetime.timedelta(seconds=EVAL_INTERVAL * 2)
     with db.Session() as sess:
         stmt = select(db.models.GameServerState).where(
-            (db.models.GameServerState.time >= min_dt) &
-            (db.models.GameServerState.trust_score is None)
+            (db.models.GameServerState.time >= min_dt)
+            & (db.models.GameServerState.trust_score is None)
+            & (db.models.GameServerState.a2s_info_responded is not None)
+            & (db.models.GameServerState.a2s_rules_responded is not None)
+            & (db.models.GameServerState.a2s_players_responded is not None)
         ).options(
             load_only(
                 db.models.GameServerState.players,
