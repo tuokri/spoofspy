@@ -94,14 +94,16 @@ def engine(force_reinit: bool = False) -> Engine:
 # noinspection PyPep8Naming
 class session_maker(sessionmaker):
     def __call__(self, **local_kw: Any) -> _ORMSession:
-        print(_pool.get_stats())
+        if _pool:
+            print(_pool.get_stats())
         return super().__call__(**local_kw)
 
 
+Session: sessionmaker
 if _SPOOFSPY_DEBUG:
-    Session: sessionmaker = session_maker(engine())
+    Session = session_maker(engine())
 else:
-    Session: sessionmaker = sessionmaker(engine())
+    Session = sessionmaker(engine())
 
 
 def drop_create_all(db_engine: Optional[Engine] = None):

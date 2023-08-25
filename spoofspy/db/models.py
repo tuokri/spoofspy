@@ -251,6 +251,10 @@ class GameServerState(TimescaleModel):
     )
 
     # A2S players fields.
+    a2s_players_responded: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=True,
+    )
     # Array of A2S player objects e.g.:
     # [
     #   {
@@ -266,10 +270,6 @@ class GameServerState(TimescaleModel):
     #       "duration": 5.4501,
     #   },
     # ]
-    a2s_players_responded: Mapped[bool] = mapped_column(
-        Boolean,
-        nullable=True,
-    )
     a2s_players: Mapped[List[dict[str, str]]] = mapped_column(
         postgresql.ARRAY(postgresql.JSONB),
         nullable=True,
