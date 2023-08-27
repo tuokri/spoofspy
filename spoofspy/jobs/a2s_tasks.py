@@ -102,7 +102,7 @@ def a2s_rules(
 
     num_open_pub = _pop(rules, "NumOpenPublicConnections")
     num_pub = _pop(rules, "NumPublicConnections")
-    pi_count = _pop(rules, "PI_COUNT")
+    pi_count = _pop(rules, "PI_COUNT", 0)
 
     # TODO: refactor this loop into functions etc.
     pi_objs = defaultdict(dict)

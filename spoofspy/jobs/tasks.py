@@ -8,7 +8,6 @@ from typing import Any
 from typing import Dict
 from typing import Optional
 
-import numpy as np
 from celery import Celery
 from celery.utils.log import get_task_logger
 from sqlalchemy import select
@@ -59,62 +58,6 @@ def get_query_settings():
     # TODO: need to be able to detect overlapping queries?
 
 
-def _clamp(x: float, x_min: float, x_max: float) -> float:
-    if x < x_min:
-        return x_min
-    elif x > x_max:
-        return x_max
-    return x
-
-
-def _eval_trust_score(state: db.models.GameServerState) -> float:
-    """Evaluate server state trust score in range [0.0, 1.0].
-    1.0 is perfect score and 0.0 is the worst possible score.
-    """
-    score = 1.0
-    players = state.players
-
-    # TODO: use weighted averages!
-
-    if state.a2s_info_responded:
-        apc = state.a2s_player_count
-        apc_diff = abs(players - apc)
-        if apc_diff >= 2:
-            score -= np.interp(
-                apc_diff,
-                trust.player_count_x,
-                trust.player_count_y,
-            )  # type: ignore[assignment]
-    else:
-        score -= 0.33
-
-    if state.a2s_rules_responded:
-        npc = state.a2s_num_public_connections
-        nopc = state.a2s_num_open_public_connections
-        c_players = npc - nopc
-        cp_diff = abs(players - c_players)
-        score -= np.interp(
-            cp_diff,
-            trust.player_count_x,
-            trust.player_count_y,
-        )  # type: ignore[assignment]
-    else:
-        score -= 0.33
-
-    if state.a2s_players_responded:
-        num_a2s_players = len(state.a2s_players)
-        n_a2s_p_diff = abs(num_a2s_players - players)
-        score -= np.interp(
-            n_a2s_p_diff,
-            trust.player_count_x,
-            trust.player_count_y,
-        )
-    else:
-        score -= 0.33
-
-    return _clamp(score, 0.0, 1.0)
-
-
 @app.task(ignore_result=True)
 def eval_server_trust_scores():
     # TODO: need to be able to detect which rows have
@@ -147,8 +90,11 @@ def eval_server_trust_scores():
         states = sess.scalars(stmt)
 
         for state in states:
-            trust_score = _eval_trust_score(state)
-            logger.info("%s: score: %s", state, trust_score)
+            try:
+                trust_score = trust.eval_trust_score(state)
+                logger.info("%s: score: %s", state, trust_score)
+            except Exception as e:
+                logger.exception("error evaluating trust score: %s", e)
             sess.merge(state)
 
 

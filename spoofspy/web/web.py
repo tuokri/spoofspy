@@ -1,3 +1,4 @@
+import logging
 import ssl
 from dataclasses import dataclass
 from typing import Dict
@@ -13,6 +14,8 @@ from sqlalchemy import select
 from spoofspy import db
 
 SSL_CONTEXT = ssl.create_default_context()
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True, slots=True)
@@ -79,9 +82,13 @@ class SteamWebAPI:
             None,  # fragment
         ))
 
-        resp = self._client.get(url)
-        self.api_requests += 1
-        servers = orjson.loads(resp.content)["response"]["servers"]
+        try:
+            resp = self._client.get(url)
+            self.api_requests += 1
+            servers = orjson.loads(resp.content)["response"]["servers"]
+        except Exception as e:
+            logger.exception("error processing GET '%s': %e", url, e)
+            servers = []
 
         for server in servers:
             addr, query_port = server["addr"].split(":")
@@ -122,5 +129,4 @@ class SteamWebAPI:
                 sess.merge(stats)
             self.api_requests = 0
         except Exception as e:
-            # TODO: logging
-            pass
+            logger.error("store_stats error: %s", e)
