@@ -21,10 +21,14 @@ classifiers = [
   "Programming Language :: Python :: Implementation :: CPython",
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
+
+# TODO: split dependencies into optional groups
+#  based on sub-packages.
 dependencies = [
   "SQLAlchemy==2.0.20",
   "celery[redis]==5.3.1",
   "eventlet==0.33.3",
+  "fastapi-cache2==0.2.1",
   "fastapi==0.101.1",
   "httpx==0.24.1",
   "msgpack==1.0.5",
