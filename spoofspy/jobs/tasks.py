@@ -64,7 +64,7 @@ def eval_server_trust_scores():
     #   ongoing A2S jobs?
     min_dt = datetime.datetime.now(tz=datetime.timezone.utc)
     min_dt -= datetime.timedelta(seconds=EVAL_INTERVAL * 2)
-    with db.Session.begin() as sess:
+    with app.db_session.begin() as sess:
         stmt = select(db.models.GameServerState).where(
             (db.models.GameServerState.time >= min_dt)
             & (db.models.GameServerState.trust_score.is_(None))
@@ -100,7 +100,7 @@ def eval_server_trust_scores():
 
 @app.task(ignore_result=True)
 def query_servers():
-    with db.Session() as sess:
+    with app.db_session() as sess:
         settings = sess.scalars(
             select(db.models.QuerySettings).where(
                 db.models.QuerySettings.is_active
@@ -130,7 +130,7 @@ def discover_servers(query_params: Dict[str, str | int]):
     server_results = list(webapi().get_server_list(query_filter, limit))
 
     # TODO: drop old entries based on some criteria?
-    with db.Session.begin() as sess:
+    with app.db_session.begin() as sess:
         for sr in server_results:
             server = db.models.GameServer(
                 address=ipaddress.IPv4Address(sr.addr),
@@ -156,7 +156,7 @@ def query_server_state(server: Dict[str, Any]):
 
     query_time = datetime.datetime.now(tz=datetime.timezone.utc)
 
-    with db.Session.begin() as sess:
+    with app.db_session.begin() as sess:
         state = db.models.GameServerState(
             time=query_time,
             game_server_address=gs_result.addr,

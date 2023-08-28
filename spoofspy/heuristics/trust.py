@@ -88,7 +88,7 @@ def eval_trust_score(state: db.models.GameServerState) -> float:
             n_a2s_p_diff,
             player_count_x,
             player_count_y,
-        )
+        )  # type: ignore[assignment]
     else:
         score -= 0.33
 

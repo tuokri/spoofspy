@@ -15,7 +15,7 @@ from celery.utils.log import get_task_logger
 from spoofspy import db
 from spoofspy.jobs.app import app
 
-# TODO: error handling.
+# TODO: more error handling?
 
 A2S_TIMEOUT = 10.0
 
@@ -60,7 +60,7 @@ def a2s_info(
         key, value in info
     }
 
-    with db.Session.begin() as sess:
+    with app.db_session.begin() as sess:
         state = db.models.GameServerState(
             time=query_time,
             game_server_address=addr[0],
@@ -135,7 +135,7 @@ def a2s_rules(
     for key in to_del:
         del rules[key]
 
-    with db.Session.begin() as sess:
+    with app.db_session.begin() as sess:
         state = db.models.GameServerState(
             time=query_time,
             game_server_address=addr[0],
@@ -181,7 +181,7 @@ def a2s_players(
         } for player in players
     ]
 
-    with db.Session.begin() as sess:
+    with app.db_session.begin() as sess:
         state = db.models.GameServerState(
             time=query_time,
             game_server_address=addr[0],

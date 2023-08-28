@@ -14,8 +14,8 @@ from sqlalchemy import Integer
 from sqlalchemy import Text
 from sqlalchemy import inspect
 from sqlalchemy.dialects import postgresql
-from sqlalchemy.ext.automap import AutomapBase
-from sqlalchemy.ext.automap import automap_base
+from sqlalchemy.ext.asyncio import AsyncAttrs
+from sqlalchemy.ext.declarative import DeferredReflection
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import Mapped
@@ -39,32 +39,71 @@ class PrettyReprMixin:
         return f"<{self.__class__.__name__} {id(self)}>"
 
 
-class BaseModel(PrettyReprMixin, DeclarativeBase):
+# TODO: better way to detect which columns are loaded
+#   for to_dict and async_to_dict?
+
+class BaseModel(PrettyReprMixin, AsyncAttrs, DeclarativeBase):
     __abstract__ = True
 
     # TODO: is this good?
-    def to_dict(self) -> dict:
+    # TODO: _asdict is better?
+    def to_dict(self, ignore_deferred=False) -> dict:
+        if ignore_deferred:
+            ignored_keys = {
+                key
+                for key, value in self.__mapper__.all_orm_descriptors.items()
+                if getattr(value.property, "deferred", None)
+            }
+        else:
+            ignored_keys = {}
+
+        keys = [
+            k for k in self.__mapper__.c.keys()
+            if k not in ignored_keys
+        ]
+
         d = {
             key: getattr(self, key)
-            for key in self.__mapper__.c.keys()
+            for key in keys
             if not key.startswith("_")
-
         }
         d_hybrid = {
             key: getattr(self, key)
             for key, prop in inspect(self.__class__).all_orm_descriptors.items()
             if isinstance(prop, hybrid_property)
         }
-
         d.update(d_hybrid)
+
         return d
 
+    async def async_to_dict(self, ignore_deferred=False) -> dict:
+        if ignore_deferred:
+            ignored_keys = {
+                key
+                for key, value in self.__mapper__.all_orm_descriptors.items()
+                if getattr(value.property, "deferred", None)
+            }
+        else:
+            ignored_keys = {}
 
-_AutomapBase: AutomapBase = automap_base()
+        keys = [
+            k for k in self.__mapper__.c.keys()
+            if k not in ignored_keys
+        ]
 
+        d = {
+            key: await getattr(self.awaitable_attrs, key)
+            for key in keys
+            if not key.startswith("_")
+        }
+        # d_hybrid = {
+        #     key: getattr(self, key)
+        #     for key, prop in inspect(self.__class__).all_orm_descriptors.items()
+        #     if isinstance(prop, hybrid_property)
+        # }
+        # d.update(d_hybrid)
 
-class AutomapModel(PrettyReprMixin, _AutomapBase):
-    __abstract__ = True
+        return d
 
 
 class QueryStatistics(BaseModel):
@@ -154,6 +193,10 @@ class GameServer(BaseModel):
     )
 
 
+class ReflectedBase(DeferredReflection):
+    __abstract__ = True
+
+
 class TimescaleModel(BaseModel):
     """TimescaleDB hypertable."""
     __abstract__ = True
@@ -165,7 +208,7 @@ class TimescaleModel(BaseModel):
     )
 
 
-class GameServerState(TimescaleModel):
+class GameServerState(TimescaleModel, ReflectedBase):
     """State(s) of queried server at given time.
     - A2S Info.
     - A2S Rules.
@@ -204,7 +247,7 @@ class GameServerState(TimescaleModel):
     secure: Mapped[bool] = mapped_column(Boolean, nullable=True)
     dedicated: Mapped[bool] = mapped_column(Boolean, nullable=True)
     os: Mapped[str] = mapped_column(Text, nullable=True)
-    gametype: Mapped[str] = mapped_column(Text, nullable=True)
+    gametype: Mapped[str] = mapped_column(Text, nullable=True, deferred=True)
 
     # A2S info fields.
     a2s_info_responded: Mapped[bool] = mapped_column(
@@ -220,6 +263,7 @@ class GameServerState(TimescaleModel):
     a2s_info: Mapped[dict[str, str]] = mapped_column(
         postgresql.JSONB,
         nullable=True,
+        deferred=True,
     )
 
     # A2S rules fields.
@@ -248,6 +292,7 @@ class GameServerState(TimescaleModel):
     a2s_rules: Mapped[dict[str, str]] = mapped_column(
         postgresql.JSONB,
         nullable=True,
+        deferred=True,
     )
 
     # A2S players fields.

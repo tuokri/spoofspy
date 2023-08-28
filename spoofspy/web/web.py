@@ -10,6 +10,7 @@ from urllib.parse import urlunparse
 import httpx
 import orjson
 from sqlalchemy import select
+from sqlalchemy.orm import sessionmaker
 
 from spoofspy import db
 
@@ -52,6 +53,7 @@ class SteamWebAPI:
         self._key = key
         # TODO: redact sensitive information from httpx logs.
         self._client = httpx.Client(verify=SSL_CONTEXT)
+        self._db_session = sessionmaker(db.engine())
 
     def __del__(self):
         self._client.close()
@@ -121,7 +123,7 @@ class SteamWebAPI:
             return
 
         try:
-            with db.Session.begin() as sess:
+            with self._db_session.begin() as sess:
                 stats = sess.scalar(
                     select(db.models.QueryStatistics)
                 )
