@@ -34,7 +34,7 @@ async def game_server():
     async with AsyncSession() as sess:
         stmt = select(db.models.GameServer)
         return [
-            await x.async_to_dict(ignore_deferred=True)
+            await x.async_to_dict(ignore_unloaded=True)
             for x in await sess.scalars(stmt)
         ]
 
