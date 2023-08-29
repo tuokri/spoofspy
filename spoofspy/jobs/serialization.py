@@ -1,15 +1,17 @@
+from typing import Any
+
 import msgpack
 
 
-def dumps(obj):
+def dumps(obj: Any) -> bytes:
     return msgpack.packb(
         obj,
         datetime=True,
     )
 
 
-def loads(obj):
+def loads(value: bytes) -> Any:
     return msgpack.unpackb(
-        obj,
+        value,
         timestamp=3,
     )
