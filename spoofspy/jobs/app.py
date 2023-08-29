@@ -48,9 +48,9 @@ app = CustomCelery(
     broker_connection_retry_on_startup=True,
     task_serializer="msgpack_dt",
     result_serializer="msgpack_dt",
-    accept_content=["application/json", "application/x-msgpack"],
-    task_accept_content=["application/json", "application/x-msgpack"],
-    result_accept_content=["application/json", "application/x-msgpack"],
+    accept_content=["application/json", "application/msgpack"],
+    task_accept_content=["application/json", "application/msgpack"],
+    result_accept_content=["application/json", "application/msgpack"],
     task_routes={
         "spoofspy.jobs.tasks.*": {"queue": "MainQueue"},
         "spoofspy.jobs.a2s_tasks.*": {"queue": "A2SQueue"},
