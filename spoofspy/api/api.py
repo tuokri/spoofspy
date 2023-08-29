@@ -1,6 +1,7 @@
 import os
 
 from fastapi import FastAPI
+from fastapi.responses import ORJSONResponse
 from fastapi_cache import FastAPICache
 from fastapi_cache.backends.redis import RedisBackend
 from fastapi_cache.decorator import cache
@@ -12,7 +13,9 @@ from sqlalchemy.orm import load_only
 from spoofspy import db
 from spoofspy.api import coding
 
-app = FastAPI()
+app = FastAPI(
+    default_response_class=ORJSONResponse
+)
 
 AsyncSession: async_sessionmaker
 
@@ -20,9 +23,32 @@ AsyncSession: async_sessionmaker
 # TODO: better, row based caching.
 # TODO: use middleware to ignore Cache-Control?
 
-@app.get("/game-server-state/")
-@cache(expire=600)
+@app.get("/")
 async def root():
+    return "hello"
+
+
+@app.get("/game-server/")
+@cache(expire=600)
+async def game_server():
+    async with AsyncSession() as sess:
+        stmt = select(db.models.GameServer)
+        return [
+            await x.async_to_dict(ignore_deferred=True)
+            for x in await sess.scalars(stmt)
+        ]
+
+
+@app.get("/game-server-state/")
+@cache(expire=600, coder=coding.ZstdMsgPackCoder)
+async def game_server_state(
+        limit: int = 9999,
+):
+    if limit > 9999:
+        limit = 9999
+    elif limit <= 0:
+        limit = 9999
+
     async with AsyncSession() as sess:
         stmt = select(db.models.GameServerState).options(
             load_only(
@@ -51,13 +77,24 @@ async def root():
                 db.models.GameServerState.a2s_players,
                 db.models.GameServerState.trust_score,
             )
-        )
+        ).limit(limit)
 
-        ret = []
-        for x in await sess.scalars(stmt):
-            ret.append(await x.async_to_dict(ignore_deferred=True))
+        return [
+            await x.async_to_dict(
+                ignore_unloaded=True,
+            )
+            for x in await sess.scalars(stmt)
+        ]
 
-        return ret
+
+@app.get("/query-settings/")
+async def query_settings():
+    async with AsyncSession() as sess:
+        stmt = select(db.models.QuerySettings)
+        return [
+            await x.async_to_dict(ignore_unloaded=True)
+            for x in await sess.scalars(stmt)
+        ]
 
 
 @app.on_event("startup")
