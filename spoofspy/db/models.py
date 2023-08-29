@@ -47,15 +47,11 @@ class BaseModel(PrettyReprMixin, AsyncAttrs, DeclarativeBase):
 
     # TODO: is this good?
     # TODO: _asdict is better?
-    def to_dict(self, ignore_deferred=False) -> dict:
-        if ignore_deferred:
-            ignored_keys = {
-                key
-                for key, value in self.__mapper__.all_orm_descriptors.items()
-                if getattr(value.property, "deferred", None)
-            }
-        else:
-            ignored_keys = {}
+    def to_dict(self, ignore_unloaded=False) -> dict:
+        ignored_keys = set()
+        if ignore_unloaded:
+            # noinspection PyUnresolvedReferences
+            ignored_keys.update(inspect(self).unloaded)
 
         keys = [
             k for k in self.__mapper__.c.keys()
@@ -76,15 +72,11 @@ class BaseModel(PrettyReprMixin, AsyncAttrs, DeclarativeBase):
 
         return d
 
-    async def async_to_dict(self, ignore_deferred=False) -> dict:
-        if ignore_deferred:
-            ignored_keys = {
-                key
-                for key, value in self.__mapper__.all_orm_descriptors.items()
-                if getattr(value.property, "deferred", None)
-            }
-        else:
-            ignored_keys = {}
+    async def async_to_dict(self, ignore_unloaded=False) -> dict:
+        ignored_keys = set()
+        if ignore_unloaded:
+            # noinspection PyUnresolvedReferences
+            ignored_keys.update(inspect(self).unloaded)
 
         keys = [
             k for k in self.__mapper__.c.keys()
@@ -128,6 +120,7 @@ class QueryStatistics(BaseModel):
     )
 
 
+# TODO: reconsider plural names?
 class QuerySettings(BaseModel):
     """Application query settings
     - Steam server query parameters.

@@ -2,6 +2,7 @@ import ipaddress
 from typing import Any
 
 import msgpack
+import zstandard as zstd
 from fastapi_cache import Coder
 
 from spoofspy import db
@@ -13,7 +14,7 @@ def _default_encode(obj: Any) -> Any:
     if isinstance(obj, db.models.BaseModel):
         return {
             "__sql_class__": obj.__class__.__name__,
-            "data": obj.to_dict(ignore_deferred=True),
+            "data": obj.to_dict(ignore_unloaded=True),
         }
     elif isinstance(obj, ipaddress.IPv4Address):
         return msgpack.ExtType(
@@ -38,6 +39,7 @@ def _ext_hook(code: int, data: bytes) -> Any:
 
 class MsgPackCoder(Coder):
     @classmethod
+    # type: ignore[override]
     def encode(cls, value: Any) -> bytes:
         return msgpack.packb(
             value,
@@ -46,6 +48,7 @@ class MsgPackCoder(Coder):
         )
 
     @classmethod
+    # type: ignore[override]
     def decode(cls, value: bytes) -> Any:
         return msgpack.unpackb(
             value,
@@ -55,3 +58,15 @@ class MsgPackCoder(Coder):
             ext_hook=_ext_hook,
             raw=True,
         )
+
+
+class ZstdMsgPackCoder(MsgPackCoder):
+    @classmethod
+    # type: ignore[override]
+    def encode(cls, value: Any) -> bytes:
+        return zstd.compress(super().encode(value))
+
+    @classmethod
+    # type: ignore[override]
+    def decode(cls, value: bytes) -> Any:
+        return super().decode(zstd.decompress(value))
