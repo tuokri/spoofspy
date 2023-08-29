@@ -15,20 +15,20 @@ register(
     "msgpack_dt",
     serialization.dumps,
     serialization.loads,
-    content_type="application/x-msgpack",
+    content_type="application/msgpack",
     content_encoding="utf-8",
 )
 
 
 @worker_init.connect
-def _init_worker(**kwargs):
+def _init_worker(**_kwargs):
     global _Session
     _Session = sessionmaker(db.engine())
     app.db_session = _Session
 
 
 @worker_shutdown.connect
-def _shutdown_worker(**kwargs):
+def _shutdown_worker(**_kwargs):
     db.close_database()
 
 
@@ -36,7 +36,7 @@ REDIS_URL = os.environ["REDIS_URL"]
 
 
 class CustomCelery(Celery):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         db_session: sessionmaker
 
