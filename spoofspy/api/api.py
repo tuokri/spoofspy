@@ -1,6 +1,10 @@
+import logging
 import os
+from ipaddress import IPv4Address
+from typing import Annotated
 
 from fastapi import FastAPI
+from fastapi import Query
 from fastapi.responses import ORJSONResponse
 from fastapi_cache import FastAPICache
 from fastapi_cache.backends.redis import RedisBackend
@@ -28,26 +32,34 @@ async def root():
     return "hello"
 
 
-@app.get("/game-server/")
+@app.get("/game-servers/")
 @cache(expire=600)
-async def game_server():
+async def game_servers(
+        address: Annotated[list[IPv4Address] | None, Query()] = None,
+):
+    stmt = select(db.models.GameServer)
+
+    if address:
+        stmt.where(
+            db.models.GameServer.address.in_(address),
+        )
+
     async with AsyncSession() as sess:
-        stmt = select(db.models.GameServer)
         return [
             await x.async_to_dict(ignore_unloaded=True)
             for x in await sess.scalars(stmt)
         ]
 
 
-@app.get("/game-server-state/")
+@app.get("/game-server-states/")
 @cache(expire=600, coder=coding.ZstdMsgPackCoder)
-async def game_server_state(
-        limit: int = 9999,
+async def game_server_states(
+        limit: int = 1000,
 ):
-    if limit > 9999:
-        limit = 9999
+    if limit > 1000:
+        limit = 1000
     elif limit <= 0:
-        limit = 9999
+        limit = 1000
 
     async with AsyncSession() as sess:
         stmt = select(db.models.GameServerState).options(
@@ -59,7 +71,6 @@ async def game_server_state(
                 db.models.GameServerState.appid,
                 db.models.GameServerState.gamedir,
                 db.models.GameServerState.version,
-                db.models.GameServerState.product,
                 db.models.GameServerState.players,
                 db.models.GameServerState.max_players,
                 db.models.GameServerState.bots,
@@ -100,6 +111,9 @@ async def query_settings():
 @app.on_event("startup")
 async def on_startup():
     global AsyncSession
+
+    logging.basicConfig()
+
     AsyncSession = async_sessionmaker(await db.async_engine())
 
     r = redis.StrictRedis().from_url(os.environ["REDIS_URL"])
