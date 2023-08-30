@@ -39,14 +39,9 @@ class PrettyReprMixin:
         return f"<{self.__class__.__name__} {id(self)}>"
 
 
-# TODO: better way to detect which columns are loaded
-#   for to_dict and async_to_dict?
-
 class BaseModel(PrettyReprMixin, AsyncAttrs, DeclarativeBase):
     __abstract__ = True
 
-    # TODO: is this good?
-    # TODO: _asdict is better?
     def to_dict(self, ignore_unloaded=False) -> dict:
         ignored_keys = set()
         if ignore_unloaded:
