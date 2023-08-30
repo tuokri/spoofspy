@@ -23,7 +23,12 @@ classifiers = [
 ]
 
 # TODO: split dependencies into optional groups
-#  based on sub-packages.
+#  based on sub-packages. This would allow installing the sub-packages
+#  without installing other sub-packages' dependencies. E.g.
+#  `api` should be able to be installed and ran without installing
+#  `jobs` dependencies that are not shared by both packages.
+# TODO: need to reorganize quite a bit to achieve the above?
+# TODO: is it even worth it?
 dependencies = [
   "SQLAlchemy[asyncio]==2.0.20",
   "celery[redis]==5.3.1",
@@ -36,11 +41,8 @@ dependencies = [
   "orjson==3.9.5",
   "psycopg[pool]==3.1.10",
   "python-a2s==1.3.0",
-  "steam==1.4.4",
   "uvicorn[standard]==0.23.2",
   "zstandard==0.21.0",
-  # "aiohttp[speedups]==3.8.5",
-  # "ujson==5.8.0",
 ]
 
 [project.urls]
