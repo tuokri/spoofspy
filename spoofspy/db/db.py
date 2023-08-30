@@ -89,14 +89,6 @@ def engine(force_reinit: bool = False) -> Engine:
 
     ReflectedBase.prepare(_engine)
 
-    # try:
-    #     if not AutomapModel.classes:
-    #         AutomapModel.prepare(autoload_with=_engine)
-    # except sqlalchemy.exc.NoReferencedTableError:
-    #     # TODO: happens when entering data to a fresh database.
-    #     #   Think of a smart way to handle this.
-    #     pass
-
     return _engine
 
 
@@ -144,14 +136,6 @@ async def async_engine(force_reinit: bool = False) -> AsyncEngine:
 
     async with _async_engine.begin() as conn:
         await conn.run_sync(ReflectedBase.prepare)
-
-    # try:
-    #     if not AutomapModel.classes:
-    #         AutomapModel.prepare(autoload_with=_async_engine.sync_engine)
-    # except sqlalchemy.exc.NoReferencedTableError:
-    #     # TODO: happens when entering data to a fresh database.
-    #     #   Think of a smart way to handle this.
-    #     pass
 
     return _async_engine
 
