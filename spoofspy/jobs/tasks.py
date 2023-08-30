@@ -52,16 +52,8 @@ def setup_periodic_tasks(sender: Celery, **kwargs):
     #   "missed" entries and evaluates them?
 
 
-@app.task
-def get_query_settings():
-    pass
-    # TODO: need to be able to detect overlapping queries?
-
-
 @app.task(ignore_result=True)
 def eval_server_trust_scores():
-    # TODO: need to be able to detect which rows have
-    #   ongoing A2S jobs?
     min_dt = datetime.datetime.now(tz=datetime.timezone.utc)
     min_dt -= datetime.timedelta(seconds=EVAL_INTERVAL * 2)
     with app.db_session.begin() as sess:
@@ -100,6 +92,7 @@ def eval_server_trust_scores():
 
 @app.task(ignore_result=True)
 def query_servers():
+    # TODO: need to be able to detect overlapping queries?
     with app.db_session() as sess:
         settings = sess.scalars(
             select(db.models.QuerySettings).where(
@@ -140,8 +133,6 @@ def discover_servers(query_params: Dict[str, str | int]):
             sess.merge(server)
 
     for sr in server_results:
-        # TODO: dataclass is not JSON-serializable.
-        #   Is there a better way to handle this?
         query_server_state.apply_async(
             (dataclasses.asdict(sr),),
             expires=QUERY_INTERVAL,
@@ -182,12 +173,3 @@ def query_server_state(server: Dict[str, Any]):
     a2s_tasks.a2s_info.delay(a2s_addr, gameport, query_time)
     a2s_tasks.a2s_rules.delay(a2s_addr, gameport, query_time)
     a2s_tasks.a2s_players.delay(a2s_addr, gameport, query_time)
-
-# TODO: need task to be able to fetch information for
-#   selected servers based on some criteria. Separate
-#   tasks for A2S and Web API based queries? A job for
-#   "evaluating" fake servers?
-
-# Should we only query servers discovered by the most recent discovery
-# job? Or should we also query past servers for a certain period before
-# "forgetting" about them?
