@@ -21,14 +21,14 @@ register(
 
 
 @worker_init.connect
-def _init_worker(**_kwargs):
+def _init_worker(*_args, **_kwargs):
     global _Session
     _Session = sessionmaker(db.engine())
     app.db_session = _Session
 
 
 @worker_shutdown.connect
-def _shutdown_worker(**_kwargs):
+def _shutdown_worker(*_args, **_kwargs):
     db.close_database()
 
 
