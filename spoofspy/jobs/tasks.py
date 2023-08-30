@@ -45,6 +45,9 @@ else:
 
 @app.on_after_configure.connect
 def setup_periodic_tasks(sender: Celery, **kwargs):
+    logger.info("using QUERY_INTERVAL=%s", QUERY_INTERVAL)
+    logger.info("using EVAL_INTERVAL=%s", EVAL_INTERVAL)
+
     sender.add_periodic_task(QUERY_INTERVAL, query_servers.s())
     sender.add_periodic_task(EVAL_INTERVAL, eval_server_trust_scores.s())
 
