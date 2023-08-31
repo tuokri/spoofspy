@@ -45,7 +45,7 @@ def a2s_info(
         info = a2s.info(addr, timeout=A2S_TIMEOUT)
         resp = True
     except known_a2s_errors as e:
-        logger.error(
+        logger.info(
             "a2s_info error: %s %s %s: %s",
             addr, gameport, query_time, e
         )
