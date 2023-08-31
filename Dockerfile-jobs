@@ -52,4 +52,6 @@ COPY --chown=overmind_user:overmind_user ./ /home/overmind_user/
 
 RUN dos2unix ./*
 
+EXPOSE 8080
+
 ENTRYPOINT ["bash", "run-jobs.sh"]

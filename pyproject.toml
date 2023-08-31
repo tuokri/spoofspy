@@ -44,6 +44,12 @@ dependencies = [
   "uvicorn[standard]==0.23.2",
   "zstandard==0.21.0",
 ]
+[project.optional-dependencies]
+dev = [
+  "hatch",
+  "mypy",
+  "ruff",
+]
 
 [project.urls]
 Documentation = "https://github.com/tuokri/spoofspy#readme"

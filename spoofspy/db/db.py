@@ -6,7 +6,6 @@ from typing import Optional
 from psycopg_pool import AsyncConnectionPool
 from psycopg_pool import AsyncNullConnectionPool
 from psycopg_pool import ConnectionPool
-from psycopg_pool import NullConnectionPool
 from sqlalchemy import Engine
 from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import AsyncEngine
@@ -19,8 +18,7 @@ from spoofspy.db.models import BaseModel
 from spoofspy.db.models import QuerySettings
 from spoofspy.db.models import QueryStatistics
 from spoofspy.db.models import ReflectedBase
-
-_SPOOFSPY_DEBUG = os.environ.get("SPOOFSPY_DEBUG")
+from spoofspy.utils.deployment import is_prod_deployment
 
 _pool: Optional[ConnectionPool] = None
 _engine: Optional[Engine] = None
@@ -68,10 +66,7 @@ def engine(force_reinit: bool = False) -> Engine:
             raise RuntimeError("no database URL")
 
         # Handled by PgBouncer.
-        if "FLY_APP_NAME" in os.environ:
-            _pool = NullConnectionPool(
-                conninfo=db_url,
-            )
+        if is_prod_deployment():
             connect_args = {"prepare_threshold": None}
         else:
             # Development env pool.
@@ -115,7 +110,7 @@ async def async_engine(force_reinit: bool = False) -> AsyncEngine:
             raise RuntimeError("no database URL")
 
         # Handled by PgBouncer.
-        if "FLY_APP_NAME" in os.environ:
+        if is_prod_deployment():
             _async_pool = AsyncNullConnectionPool(
                 conninfo=db_url,
             )
@@ -167,7 +162,7 @@ def drop_create_all(db_engine: Optional[Engine] = None):
     with session.begin() as sess:
         sess.add(QueryStatistics())
 
-    if _SPOOFSPY_DEBUG:
+    if not is_prod_deployment():
         with session.begin() as sess:
             sess.add(QuerySettings(
                 name="test query",

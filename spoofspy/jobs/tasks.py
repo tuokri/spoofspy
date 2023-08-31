@@ -15,10 +15,10 @@ from celery.utils.log import get_task_logger
 from sqlalchemy import select
 from sqlalchemy.orm import load_only
 
-from spoofspy import db
 from spoofspy.heuristics import trust
 from spoofspy.jobs import a2s_tasks
 from spoofspy.jobs.app import app
+from spoofspy.utils.deployment import is_prod_deployment
 from spoofspy.web import GameServerResult
 from spoofspy.web import SteamWebAPI
 
@@ -38,10 +38,10 @@ def webapi() -> SteamWebAPI:
     return _webapi
 
 
-if os.environ.get("SPOOFSPY_DEBUG"):
-    QUERY_INTERVAL = EVAL_INTERVAL = 1 * 60
-else:
+if is_prod_deployment():
     QUERY_INTERVAL = EVAL_INTERVAL = 5 * 60
+else:
+    QUERY_INTERVAL = EVAL_INTERVAL = 1 * 60
 
 
 @beat_init.connect
