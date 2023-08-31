@@ -3,13 +3,14 @@ import os
 from celery import Celery
 from celery.signals import worker_init
 from celery.signals import worker_shutdown
+from celery.utils.log import get_logger
 from kombu.serialization import register
 from sqlalchemy.orm import sessionmaker
 
 from spoofspy import db
 from spoofspy.jobs import serialization
 
-_Session: sessionmaker
+logger = get_logger(__name__)
 
 register(
     "msgpack_dt",
@@ -22,9 +23,7 @@ register(
 
 @worker_init.connect
 def _init_worker(*_args, **_kwargs):
-    global _Session
-    _Session = sessionmaker(db.engine())
-    app.db_session = _Session
+    app._db_session = sessionmaker(db.engine())
 
 
 @worker_shutdown.connect
@@ -36,9 +35,21 @@ REDIS_URL = os.environ["REDIS_URL"]
 
 
 class CustomCelery(Celery):
+
+    @property
+    def db_session(self) -> sessionmaker:
+        # This should be done in `worker_init` before we even
+        # get here, but somehow this has happened (although very rarely)
+        # during development and testing.
+        if not self._db_session:
+            logger.warn("_db_session not initialized, performing late init!")
+            self._db_session = sessionmaker(db.engine())
+
+        return self._db_session
+
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        db_session: sessionmaker
+        self._db_session: sessionmaker | None = None
 
 
 _accept_content = [
