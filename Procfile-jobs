@@ -1,5 +1,3 @@
 beat: celery --app spoofspy.jobs.app:app beat --concurrency=1 --loglevel=INFO
-worker: celery --app spoofspy.jobs.app:app worker --loglevel=INFO --concurrency=2 \
-    --pool=solo --queues=MainQueue
-a2s_worker: celery --app spoofspy.jobs.app:app worker --loglevel=INFO --concurrency=4 \
-    --pool=eventlet --queues=A2SQueue --hostname=a2s_app@%h
+worker: celery --app spoofspy.jobs.app:app worker --loglevel=INFO --concurrency=2 --pool=solo --queues=MainQueue
+a2s_worker: celery --app spoofspy.jobs.app:app worker --loglevel=INFO --concurrency=50 --pool=eventlet --queues=A2SQueue --hostname=a2s_app@%h
