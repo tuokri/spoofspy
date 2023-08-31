@@ -9,6 +9,8 @@ from typing import Dict
 from typing import Optional
 
 from celery import Celery
+from celery.signals import beat_init
+from celery.utils.log import get_logger
 from celery.utils.log import get_task_logger
 from sqlalchemy import select
 from sqlalchemy.orm import load_only
@@ -26,6 +28,7 @@ DISCOVER_DELAY_MAX = 10.0
 _webapi: Optional[SteamWebAPI] = None
 
 logger: logging.Logger = get_task_logger(__name__)
+beat_logger: logging.Logger = get_logger(f"beat.{__name__}")
 
 
 def webapi() -> SteamWebAPI:
@@ -36,18 +39,19 @@ def webapi() -> SteamWebAPI:
 
 
 if os.environ.get("SPOOFSPY_DEBUG"):
-    QUERY_INTERVAL = 1 * 60
-    EVAL_INTERVAL = (1 * 60) + 10
+    QUERY_INTERVAL = EVAL_INTERVAL = 1 * 60
 else:
-    QUERY_INTERVAL = 5 * 60
-    EVAL_INTERVAL = (5 * 60) + 10
+    QUERY_INTERVAL = EVAL_INTERVAL = 5 * 60
+
+
+@beat_init.connect
+def beat_init(*_args, **_kwargs):
+    beat_logger.info("using QUERY_INTERVAL=%s", QUERY_INTERVAL)
+    beat_logger.info("using EVAL_INTERVAL=%s", EVAL_INTERVAL)
 
 
 @app.on_after_configure.connect
-def setup_periodic_tasks(sender: Celery, **kwargs):
-    logger.info("using QUERY_INTERVAL=%s", QUERY_INTERVAL)
-    logger.info("using EVAL_INTERVAL=%s", EVAL_INTERVAL)
-
+def setup_periodic_tasks(sender: Celery, **_kwargs):
     sender.add_periodic_task(QUERY_INTERVAL, query_servers.s())
     sender.add_periodic_task(EVAL_INTERVAL, eval_server_trust_scores.s())
 
