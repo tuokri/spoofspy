@@ -161,3 +161,6 @@ cython_debug/
 
 # Hatch dynamic version file
 spoofspy/_version.py
+
+# Generated requirements files
+requirements-*.txt
