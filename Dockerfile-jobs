@@ -2,9 +2,11 @@ FROM python:3.11-slim-bullseye
 
 ENV PYTHONUNBUFFERED 1
 
+# TODO: HTOP ONLY FOR DEBUG!
 RUN apt-get update && apt-get install -y \
     dos2unix \
     gcc \
+    htop \
     libpq-dev \
     libsqlite3-dev  \
     python3-dev \
@@ -23,9 +25,9 @@ RUN pip install -r requirements-jobs.txt --no-cache-dir
 # Install psycopg3 optimized local build.
 RUN pip install psycopg[c,pool] --no-cache-dir
 
-ENV OVERMIND_VERSION="v2.4.0"
-ENV OVERMIND_URL="https://github.com/DarthSim/overmind/releases/download/${OVERMIND_VERSION}/overmind-${OVERMIND_VERSION}-linux-amd64.gz"
-ENV OVERMIND_SHA256="1f7cac289b550a71bebf4a29139e58831b39003d9831be59eed3e39a9097311c"
+ARG OVERMIND_VERSION="v2.4.0"
+ARG OVERMIND_URL="https://github.com/DarthSim/overmind/releases/download/${OVERMIND_VERSION}/overmind-${OVERMIND_VERSION}-linux-amd64.gz"
+ARG OVERMIND_SHA256="1f7cac289b550a71bebf4a29139e58831b39003d9831be59eed3e39a9097311c"
 # TODO: checksum not supported by fly.io. Running old version?
 # --checksum=sha256:1f7cac289b550a71bebf4a29139e58831b39003d9831be59eed3e39a9097311c \
 ADD ${OVERMIND_URL} ./
