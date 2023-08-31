@@ -47,6 +47,7 @@ class GameServerResult:
 class SteamWebAPI:
     # Total number of requests made to Steam Web API
     # in all SteamWebAPI instances.
+    # TODO: thread safety?
     api_requests: int = 0
 
     def __init__(self, key: str):
