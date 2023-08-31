@@ -15,6 +15,7 @@ from celery.utils.log import get_task_logger
 from sqlalchemy import select
 from sqlalchemy.orm import load_only
 
+from spoofspy import db
 from spoofspy.heuristics import trust
 from spoofspy.jobs import a2s_tasks
 from spoofspy.jobs.app import app
