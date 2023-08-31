@@ -6,6 +6,7 @@ from typing import Optional
 from psycopg_pool import AsyncConnectionPool
 from psycopg_pool import AsyncNullConnectionPool
 from psycopg_pool import ConnectionPool
+from psycopg_pool import NullConnectionPool
 from sqlalchemy import Engine
 from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import AsyncEngine
@@ -67,6 +68,9 @@ def engine(force_reinit: bool = False) -> Engine:
 
         # Handled by PgBouncer.
         if is_prod_deployment():
+            _pool = NullConnectionPool(
+                conninfo=db_url,
+            )
             connect_args = {"prepare_threshold": None}
         else:
             # Development env pool.
