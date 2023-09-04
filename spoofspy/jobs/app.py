@@ -23,6 +23,7 @@ register(
 
 @worker_init.connect
 def _init_worker(*_args, **_kwargs):
+    # TODO: this can fail quietly?
     app._db_session = sessionmaker(db.engine())
 
 
