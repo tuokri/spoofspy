@@ -44,17 +44,21 @@ if is_prod_deployment():
 else:
     QUERY_INTERVAL = EVAL_INTERVAL = 1 * 60
 
+A2S_TASK_EXPIRY = QUERY_INTERVAL * 2
+
 
 @beat_init.connect
-def beat_init(*_args, **_kwargs):
+def on_beat_init(*_args, **_kwargs):
     beat_logger.info("using QUERY_INTERVAL=%s", QUERY_INTERVAL)
     beat_logger.info("using EVAL_INTERVAL=%s", EVAL_INTERVAL)
 
 
 @app.on_after_configure.connect
 def setup_periodic_tasks(sender: Celery, **_kwargs):
-    sender.add_periodic_task(QUERY_INTERVAL, query_servers.s())
-    sender.add_periodic_task(EVAL_INTERVAL, eval_server_trust_scores.s())
+    sender.add_periodic_task(
+        QUERY_INTERVAL, query_servers.s(), expires=QUERY_INTERVAL)
+    sender.add_periodic_task(
+        EVAL_INTERVAL, eval_server_trust_scores.s(), expires=EVAL_INTERVAL)
 
     # TODO: Also need an eval job that runs less often but checks old,
     #   "missed" entries and evaluates them?
@@ -73,6 +77,8 @@ def eval_server_trust_scores():
             & (db.models.GameServerState.a2s_players_responded.is_not(None))
         ).options(
             load_only(
+                db.models.GameServerState.game_server_port,
+                db.models.GameServerState.game_server_address,
                 db.models.GameServerState.players,
                 db.models.GameServerState.max_players,
                 db.models.GameServerState.a2s_info_responded,
@@ -85,6 +91,7 @@ def eval_server_trust_scores():
                 db.models.GameServerState.a2s_pi_objects,
                 db.models.GameServerState.a2s_players_responded,
                 db.models.GameServerState.a2s_players,
+                db.models.GameServerState.secure,
             )
         )
         states = sess.scalars(stmt)
@@ -92,10 +99,16 @@ def eval_server_trust_scores():
         for state in states:
             try:
                 trust_score = trust.eval_trust_score(state)
-                logger.info("%s: score: %s", state, trust_score)
+                logger.info(
+                    "%s:%s: score: %s",
+                    state.game_server_address,
+                    state.game_server_port,
+                    trust_score,
+                )
+                state.trust_score = trust_score
+                sess.merge(state)
             except Exception as e:
                 logger.exception("error evaluating trust score: %s", e)
-            sess.merge(state)
 
 
 @app.task(ignore_result=True)
@@ -178,6 +191,15 @@ def query_server_state(server: Dict[str, Any]):
         )
         sess.merge(state)
 
-    a2s_tasks.a2s_info.delay(a2s_addr, gameport, query_time)
-    a2s_tasks.a2s_rules.delay(a2s_addr, gameport, query_time)
-    a2s_tasks.a2s_players.delay(a2s_addr, gameport, query_time)
+    a2s_tasks.a2s_info.apply_async(
+        (a2s_addr, gameport, query_time),
+        expires=A2S_TASK_EXPIRY,
+    )
+    a2s_tasks.a2s_rules.apply_async(
+        (a2s_addr, gameport, query_time),
+        expires=A2S_TASK_EXPIRY,
+    )
+    a2s_tasks.a2s_players.apply_async(
+        (a2s_addr, gameport, query_time),
+        expires=A2S_TASK_EXPIRY,
+    )

@@ -31,6 +31,7 @@ CREATE TABLE "game_server_state"
 
     -- A2S info.
     a2s_info_responded              BOOLEAN,
+    a2s_info_response_time          TIMESTAMPTZ,
     a2s_server_name                 TEXT,
     a2s_map_name                    TEXT,
     a2s_steam_id                    BIGINT,
@@ -40,6 +41,7 @@ CREATE TABLE "game_server_state"
 
     -- A2S rules.
     a2s_rules_responded             BOOLEAN,
+    a2s_rules_response_time         TIMESTAMPTZ,
     a2s_num_open_public_connections INTEGER,
     a2s_num_public_connections      INTEGER,
     a2s_pi_count                    INTEGER,
@@ -48,6 +50,7 @@ CREATE TABLE "game_server_state"
 
     -- A2S players.
     a2s_players_responded           BOOLEAN,
+    a2s_players_response_time       TIMESTAMPTZ,
     a2s_players                     JSONB[],
 
     trust_score                     REAL,
@@ -58,7 +61,8 @@ CREATE TABLE "game_server_state"
 );
 
 CREATE INDEX ON "game_server_state" (time DESC);
+CREATE INDEX ON "game_server_state" (time DESC, trust_score);
 
 SELECT create_hypertable('game_server_state', 'time');
 
-SELECT add_retention_policy('game_server_state', INTERVAL '3 months');
+SELECT add_retention_policy('game_server_state', INTERVAL '6 months');

@@ -10,6 +10,7 @@ from typing import Union
 import a2s
 from a2s import BrokenMessageError
 from a2s import BufferExhaustedError
+from celery import Task
 from celery.utils.log import get_task_logger
 
 from spoofspy import db
@@ -17,7 +18,7 @@ from spoofspy.jobs.app import app
 
 # TODO: more error handling?
 
-A2S_TIMEOUT = 10.0
+A2S_TIMEOUT = 5.0
 
 logger: logging.Logger = get_task_logger(__name__)
 
@@ -31,7 +32,16 @@ known_a2s_errors = (
 )
 
 
-@app.task(ignore_result=True)
+def _should_throw_retry(task: Task) -> bool:
+    return task.request.retries > task.max_retries
+
+
+@app.task(
+    ignore_result=True,
+    autoretry_for=(TimeoutError,),
+    default_retry_delay=5,
+    max_retries=3,
+)
 def a2s_info(
         addr: Tuple[str, int],
         gameport: int,
@@ -41,9 +51,20 @@ def a2s_info(
     info = {}
 
     resp = False
+    resp_time = None
     try:
         info = a2s.info(addr, timeout=A2S_TIMEOUT)
+        resp_time = datetime.datetime.now(tz=datetime.timezone.utc)
         resp = True
+    except TimeoutError as e:
+        # noinspection PyTypeChecker
+        if _should_throw_retry(a2s_info):
+            raise
+        else:
+            logger.info(
+                "a2s_info error: %s %s %s: %s (max retries exceeded)",
+                addr, gameport, query_time, e
+            )
     except known_a2s_errors as e:
         logger.info(
             "a2s_info error: %s %s %s: %s",
@@ -66,6 +87,7 @@ def a2s_info(
             game_server_address=addr[0],
             game_server_port=gameport,
             a2s_info_responded=resp,
+            a2s_info_response_time=resp_time,
             a2s_server_name=_pop(info_fields, "server_name"),
             a2s_map_name=_pop(info_fields, "map_name"),
             a2s_steam_id=_pop(info_fields, "steam_id"),
@@ -76,7 +98,12 @@ def a2s_info(
         sess.merge(state)
 
 
-@app.task(ignore_result=True)
+@app.task(
+    ignore_result=True,
+    autoretry_for=(TimeoutError,),
+    default_retry_delay=5,
+    max_retries=2,
+)
 def a2s_rules(
         addr: Tuple[str, int],
         gameport: int,
@@ -86,9 +113,20 @@ def a2s_rules(
     rules: Dict[str, str] = {}
 
     resp = False
+    resp_time = None
     try:
         rules = a2s.rules(addr, timeout=A2S_TIMEOUT)
+        resp_time = datetime.datetime.now(tz=datetime.timezone.utc)
         resp = True
+    except TimeoutError as e:
+        # noinspection PyTypeChecker
+        if _should_throw_retry(a2s_info):
+            raise
+        else:
+            logger.info(
+                "a2s_info error: %s %s %s: %s (max retries exceeded)",
+                addr, gameport, query_time, e
+            )
     except known_a2s_errors as e:
         logger.error(
             "a2s_rules error: %s %s %s: %s",
@@ -105,25 +143,26 @@ def a2s_rules(
     pi_count = _pop(rules, "PI_COUNT", 0)
 
     # TODO: refactor this loop into functions etc.
-    pi_objs = defaultdict(dict)
+    pi_objs: dict[int, dict[str, str]] = defaultdict(dict)
     to_del = set()
-    ignore_idxs = set()
+    # ignore_idxs = set()
     for key, value in rules.items():
         if key.startswith("PI_"):
             try:
+                # NOTE: index becomes a string in JSONB.
                 idx = int(key.split("_")[-1])
                 to_del.add(key)
             except ValueError:
                 continue
 
-            if idx in ignore_idxs:
-                continue
+            # if idx in ignore_idxs:
+            #     continue
 
             if key.startswith("PI_N_"):
                 # Name.
-                if value == "<<ChatLogger>>":
-                    ignore_idxs.add(idx)
-                    continue
+                # if value == "<<ChatLogger>>":
+                #     ignore_idxs.add(idx)
+                #     continue
                 pi_objs[idx]["n"] = value
             elif key.startswith("PI_P_"):
                 # Platform.
@@ -141,6 +180,7 @@ def a2s_rules(
             game_server_address=addr[0],
             game_server_port=gameport,
             a2s_rules_responded=resp,
+            a2s_rules_response_time=resp_time,
             a2s_num_open_public_connections=num_open_pub,
             a2s_num_public_connections=num_pub,
             a2s_pi_count=pi_count,
@@ -150,7 +190,12 @@ def a2s_rules(
         sess.merge(state)
 
 
-@app.task(ignore_result=True)
+@app.task(
+    ignore_result=True,
+    autoretry_for=(TimeoutError,),
+    default_retry_delay=5,
+    max_retries=2,
+)
 def a2s_players(
         addr: Tuple[str, int],
         gameport: int,
@@ -160,9 +205,20 @@ def a2s_players(
     players = []
 
     resp = False
+    resp_time = None
     try:
         players = a2s.players(addr, timeout=A2S_TIMEOUT)
         resp = True
+        resp_time = datetime.datetime.now(tz=datetime.timezone.utc)
+    except TimeoutError as e:
+        # noinspection PyTypeChecker
+        if _should_throw_retry(a2s_info):
+            raise
+        else:
+            logger.info(
+                "a2s_info error: %s %s %s: %s (max retries exceeded)",
+                addr, gameport, query_time, e
+            )
     except known_a2s_errors as e:
         logger.error(
             "a2s_players error: %s %s %s: %s",
@@ -187,6 +243,7 @@ def a2s_players(
             game_server_address=addr[0],
             game_server_port=gameport,
             a2s_players_responded=resp,
+            a2s_players_response_time=resp_time,
             a2s_players=players,
         )
         sess.merge(state)

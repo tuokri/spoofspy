@@ -23,7 +23,7 @@ RUN pip install --upgrade pip --no-cache-dir
 RUN pip install -r requirements-jobs.txt --no-cache-dir
 
 # Install psycopg3 optimized local build.
-RUN pip install psycopg[c,pool] --no-cache-dir
+RUN pip install psycopg[c] --no-cache-dir
 
 ARG OVERMIND_VERSION="v2.4.0"
 ARG OVERMIND_URL="https://github.com/DarthSim/overmind/releases/download/${OVERMIND_VERSION}/overmind-${OVERMIND_VERSION}-linux-amd64.gz"

@@ -37,6 +37,10 @@ REDIS_URL = os.environ["REDIS_URL"]
 
 class CustomCelery(Celery):
 
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self._db_session: sessionmaker | None = None
+
     @property
     def db_session(self) -> sessionmaker:
         # This should be done in `worker_init` before we even
@@ -47,10 +51,6 @@ class CustomCelery(Celery):
             self._db_session = sessionmaker(db.engine())
 
         return self._db_session
-
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-        self._db_session: sessionmaker | None = None
 
 
 _accept_content = [

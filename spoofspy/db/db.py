@@ -2,13 +2,17 @@ import atexit
 import os
 from pathlib import Path
 from typing import Optional
+from typing import Tuple
+from typing import Type
 
-from psycopg_pool import AsyncConnectionPool
-from psycopg_pool import AsyncNullConnectionPool
-from psycopg_pool import ConnectionPool
-from psycopg_pool import NullConnectionPool
 from sqlalchemy import Engine
+from sqlalchemy import NullPool
+from sqlalchemy import Pool
+from sqlalchemy import QueuePool
+from sqlalchemy import URL
 from sqlalchemy import create_engine
+from sqlalchemy import make_url
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.ext.compiler import compiles
@@ -21,69 +25,66 @@ from spoofspy.db.models import QueryStatistics
 from spoofspy.db.models import ReflectedBase
 from spoofspy.utils.deployment import is_prod_deployment
 
-_pool: Optional[ConnectionPool] = None
 _engine: Optional[Engine] = None
-_async_pool: Optional[AsyncConnectionPool] = None
 _async_engine: Optional[AsyncEngine] = None
 
 
 def close_database():
     if _engine:
         _engine.dispose(True)
-    if _pool:
-        _pool.close()
 
 
 async def async_close_database():
     if _async_engine:
         await _async_engine.dispose(True)
-    if _async_pool:
-        await _async_pool.close()
 
 
 atexit.register(close_database)
 
 
-def engine(force_reinit: bool = False) -> Engine:
-    global _pool
-    global _engine
-
+def _engine_args() -> Tuple[dict, dict, URL]:
     connect_args = {}
+    pool_kwargs: dict[str, int | Type[Pool]] = {}
+
+    db_url = os.environ.get("DATABASE_URL")
+    if not db_url:
+        raise RuntimeError("no database URL")
+
+    url = make_url(db_url)
+    url = url.set(drivername="postgresql+psycopg")
+
+    # Handled by PgBouncer.
+    if is_prod_deployment():
+        connect_args = {"prepare_threshold": None}
+        pool_kwargs = {
+            "poolclass": NullPool,
+        }
+    else:
+        # Development env pool.
+        pool_kwargs = {
+            "poolclass": QueuePool,
+            "pool_size": 100,
+        }
+
+    return connect_args, pool_kwargs, url
+
+
+def engine(force_reinit: bool = False) -> Engine:
+    global _engine
 
     # TODO: should this only exist for dev env?
     if force_reinit:
         if _engine:
             _engine.dispose(True)
-        if _pool:
-            _pool.close()
         del _engine
-        del _pool
         _engine = None
-        _pool = None
-
-    if _pool is None:
-        db_url = os.environ.get("DATABASE_URL")
-        if not db_url:
-            raise RuntimeError("no database URL")
-
-        # Handled by PgBouncer.
-        if is_prod_deployment():
-            _pool = NullConnectionPool(
-                conninfo=db_url,
-            )
-            connect_args = {"prepare_threshold": None}
-        else:
-            # Development env pool.
-            _pool = ConnectionPool(
-                conninfo=db_url,
-            )
 
     if _engine is None:
-        protocol = "postgresql+psycopg://"
+        connect_args, pool_kwargs, db_url = _engine_args()
         _engine = create_engine(
-            url=protocol,
-            creator=_pool.getconn,
+            url=db_url,
             connect_args=connect_args,
+            **pool_kwargs,
         )
 
     ReflectedBase.prepare(_engine)
@@ -92,45 +93,21 @@ def engine(force_reinit: bool = False) -> Engine:
 
 
 async def async_engine(force_reinit: bool = False) -> AsyncEngine:
-    global _async_pool
     global _async_engine
-
-    connect_args = {}
 
     # TODO: should this only exist for dev env?
     if force_reinit:
         if _async_engine:
             await _async_engine.dispose(True)
-        if _async_pool:
-            await _async_pool.close()
         del _async_engine
-        del _async_pool
         _async_engine = None
-        _async_pool = None
-
-    if _async_pool is None:
-        db_url = os.environ.get("DATABASE_URL")
-        if not db_url:
-            raise RuntimeError("no database URL")
-
-        # Handled by PgBouncer.
-        if is_prod_deployment():
-            _async_pool = AsyncNullConnectionPool(
-                conninfo=db_url,
-            )
-            connect_args = {"prepare_threshold": None}
-        else:
-            # Development env pool.
-            _async_pool = AsyncConnectionPool(
-                conninfo=db_url,
-            )
 
     if _async_engine is None:
-        protocol = "postgresql+psycopg://"
+        connect_args, pool_kwargs, db_url = _engine_args()
         _async_engine = create_async_engine(
-            url=protocol,
-            async_creator=_async_pool.getconn,
+            url=db_url,
             connect_args=connect_args,
+            **pool_kwargs,
         )
 
     async with _async_engine.begin() as conn:
@@ -155,11 +132,10 @@ def drop_create_all(db_engine: Optional[Engine] = None):
 
     session = sessionmaker(db_engine)
 
-    with session() as s, s.begin():
-        _timescale_sql = (
-                Path(__file__).parent / "timescale.sql").read_text()
-        _c = s.connection().connection.cursor()
-        _c.execute(_timescale_sql)
+    timescale_sql = text(
+        (Path(__file__).parent / "timescale.sql").read_text())
+    with session.begin() as sess:
+        sess.execute(timescale_sql)
 
     ReflectedBase.prepare(db_engine)
 

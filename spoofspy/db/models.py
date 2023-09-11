@@ -242,6 +242,10 @@ class GameServerState(TimescaleModel, ReflectedBase):
         Boolean,
         nullable=True,
     )
+    a2s_info_response_time: Mapped[datetime.datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
     a2s_server_name: Mapped[str] = mapped_column(Text, nullable=True)
     a2s_map_name: Mapped[str] = mapped_column(Text, nullable=True)
     a2s_steam_id: Mapped[int] = mapped_column(BigInteger, nullable=True)
@@ -259,6 +263,10 @@ class GameServerState(TimescaleModel, ReflectedBase):
         Boolean,
         nullable=True,
     )
+    a2s_rules_response_time: Mapped[datetime.datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
     a2s_num_open_public_connections: Mapped[int] = mapped_column(
         Integer,
         nullable=True,
@@ -272,7 +280,7 @@ class GameServerState(TimescaleModel, ReflectedBase):
         Integer,
         nullable=True,
     )
-    a2s_pi_objects: Mapped[dict[int, str]] = mapped_column(
+    a2s_pi_objects: Mapped[dict[str, dict]] = mapped_column(
         postgresql.JSONB,
         nullable=True,
     )
@@ -286,6 +294,10 @@ class GameServerState(TimescaleModel, ReflectedBase):
     # A2S players fields.
     a2s_players_responded: Mapped[bool] = mapped_column(
         Boolean,
+        nullable=True,
+    )
+    a2s_players_response_time: Mapped[datetime.datetime] = mapped_column(
+        DateTime(timezone=True),
         nullable=True,
     )
     # Array of A2S player objects e.g.:
