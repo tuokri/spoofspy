@@ -196,7 +196,7 @@ class TimescaleModel(BaseModel):
     )
 
 
-class GameServerState(TimescaleModel, ReflectedBase):
+class GameServerState(ReflectedBase, TimescaleModel):
     """State(s) of queried server at given time.
     - A2S Info.
     - A2S Rules.

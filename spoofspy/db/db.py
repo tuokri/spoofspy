@@ -69,7 +69,10 @@ def _engine_args() -> Tuple[dict, dict, URL]:
     return connect_args, pool_kwargs, url
 
 
-def engine(force_reinit: bool = False) -> Engine:
+def engine(
+        reflect: bool = True,
+        force_reinit: bool = False,
+) -> Engine:
     global _engine
 
     # TODO: should this only exist for dev env?
@@ -87,7 +90,8 @@ def engine(force_reinit: bool = False) -> Engine:
             **pool_kwargs,
         )
 
-    ReflectedBase.prepare(_engine)
+    if reflect:
+        ReflectedBase.prepare(_engine)
 
     return _engine
 
@@ -123,7 +127,7 @@ def drop_create_all(db_engine: Optional[Engine] = None):
         return f"{compiler.visit_drop_table(element)} CASCADE"
 
     if db_engine is None:
-        db_engine = engine()
+        db_engine = engine(reflect=False)
 
     db_engine.dispose(close=False)
 

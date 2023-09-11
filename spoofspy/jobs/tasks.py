@@ -63,6 +63,9 @@ def setup_periodic_tasks(sender: Celery, **_kwargs):
     # TODO: Also need an eval job that runs less often but checks old,
     #   "missed" entries and evaluates them?
 
+    # TODO: debug only.
+    query_servers.delay()
+
 
 @app.task(ignore_result=True)
 def eval_server_trust_scores():
