@@ -72,6 +72,7 @@ def _engine_args() -> Tuple[dict, dict, URL]:
 def engine(
         reflect: bool = True,
         force_reinit: bool = False,
+        dispose: bool = False,
 ) -> Engine:
     global _engine
 
@@ -93,10 +94,18 @@ def engine(
     if reflect:
         ReflectedBase.prepare(_engine)
 
+    if dispose:
+        # For multiprocessing cases.
+        _engine.dispose(close=False)
+
     return _engine
 
 
-async def async_engine(force_reinit: bool = False) -> AsyncEngine:
+async def async_engine(
+        reflect: bool = True,
+        force_reinit: bool = False,
+        dispose: bool = False,
+) -> AsyncEngine:
     global _async_engine
 
     # TODO: should this only exist for dev env?
@@ -114,8 +123,12 @@ async def async_engine(force_reinit: bool = False) -> AsyncEngine:
             **pool_kwargs,
         )
 
-    async with _async_engine.begin() as conn:
-        await conn.run_sync(ReflectedBase.prepare)
+    if reflect:
+        async with _async_engine.begin() as conn:
+            await conn.run_sync(ReflectedBase.prepare)
+
+    if dispose:
+        await _async_engine.dispose(close=False)
 
     return _async_engine
 

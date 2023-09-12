@@ -21,12 +21,18 @@ register(
 )
 
 
+def _make_session() -> sessionmaker:
+    return sessionmaker(db.engine(dispose=True))
+
+
 @worker_init.connect
 def _init_worker(*_args, **_kwargs):
     # TODO: this can fail quietly?
     global _DB_SESSION
-    if not _DB_SESSION:
-        _DB_SESSION = sessionmaker(db.engine())
+
+    # noinspection PyProtectedMember
+    if not all((_DB_SESSION, app._db_session)):
+        _DB_SESSION = _make_session()
         app._db_session = _DB_SESSION
 
 
@@ -53,9 +59,9 @@ class CustomCelery(Celery):
         # This should be done in `worker_init` before we even
         # get here, but somehow this has happened (although very rarely)
         # during development and testing.
-        if not _DB_SESSION:
+        if not all((_DB_SESSION, self._db_session)):
             logger.warn("_DB_SESSION not initialized, performing late init!")
-            _DB_SESSION = sessionmaker(db.engine())
+            _DB_SESSION = _make_session()
             self._db_session = _DB_SESSION
 
         return self._db_session
