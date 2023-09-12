@@ -24,7 +24,10 @@ register(
 @worker_init.connect
 def _init_worker(*_args, **_kwargs):
     # TODO: this can fail quietly?
-    app._db_session = sessionmaker(db.engine())
+    global _DB_SESSION
+    if not _DB_SESSION:
+        _DB_SESSION = sessionmaker(db.engine())
+        app._db_session = _DB_SESSION
 
 
 @worker_shutdown.connect
@@ -34,21 +37,26 @@ def _shutdown_worker(*_args, **_kwargs):
 
 REDIS_URL = os.environ["REDIS_URL"]
 
+_DB_SESSION: sessionmaker | None = None
+
 
 class CustomCelery(Celery):
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        self._db_session: sessionmaker | None = None
+        self._db_session: sessionmaker | None = _DB_SESSION
 
     @property
     def db_session(self) -> sessionmaker:
+        global _DB_SESSION
+
         # This should be done in `worker_init` before we even
         # get here, but somehow this has happened (although very rarely)
         # during development and testing.
-        if not self._db_session:
-            logger.warn("_db_session not initialized, performing late init!")
-            self._db_session = sessionmaker(db.engine())
+        if not _DB_SESSION:
+            logger.warn("_DB_SESSION not initialized, performing late init!")
+            _DB_SESSION = sessionmaker(db.engine())
+            self._db_session = _DB_SESSION
 
         return self._db_session
 
