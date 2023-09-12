@@ -44,7 +44,7 @@ atexit.register(close_database)
 
 def _engine_args() -> Tuple[dict, dict, URL]:
     connect_args = {}
-    pool_kwargs: dict[str, int | Type[Pool]] = {}
+    pool_kwargs: dict[str, int | Type[Pool]]
 
     db_url = os.environ.get("DATABASE_URL")
     if not db_url:
@@ -63,7 +63,7 @@ def _engine_args() -> Tuple[dict, dict, URL]:
         # Development env pool.
         pool_kwargs = {
             "poolclass": QueuePool,
-            "pool_size": 100,
+            "pool_size": 30,
         }
 
     return connect_args, pool_kwargs, url
