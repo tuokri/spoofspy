@@ -8,6 +8,7 @@ logger = logging.getLogger(__name__)
 
 # Player count difference penalty curve x values.
 player_count_x = np.array([
+    0,
     2,
     5,
     12,
@@ -18,12 +19,13 @@ player_count_x = np.array([
 ])
 # Player count difference penalty curve y values.
 player_count_y = np.array([
+    0.0,
     0.02,
     0.06,
-    0.07,
-    0.08,
-    0.1,
     0.2,
+    0.3,
+    0.4,
+    1.0,
     5.0,
 ])
 
