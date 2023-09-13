@@ -9,6 +9,7 @@ from typing import Dict
 from typing import Optional
 
 from celery import Celery
+from celery.schedules import crontab
 from celery.signals import beat_init
 from celery.utils.log import get_logger
 from celery.utils.log import get_task_logger
@@ -36,6 +37,7 @@ def webapi() -> SteamWebAPI:
     global _webapi
     if _webapi is None:
         _webapi = SteamWebAPI(key=os.environ["STEAM_WEB_API_KEY"])
+        logger.info("created SteamWebAPI instance: %s", _webapi)
     return _webapi
 
 
@@ -56,54 +58,89 @@ def on_beat_init(*_args, **_kwargs):
 @app.on_after_configure.connect
 def setup_periodic_tasks(sender: Celery, **_kwargs):
     sender.add_periodic_task(
-        QUERY_INTERVAL, query_servers.s(), expires=QUERY_INTERVAL)
+        QUERY_INTERVAL,
+        query_servers.s(),
+        expires=QUERY_INTERVAL,
+    )
+
     sender.add_periodic_task(
         EVAL_INTERVAL,
         eval_server_trust_scores.s(
-            timedelta={"seconds": EVAL_INTERVAL * 2}),
+            timedelta={"seconds": EVAL_INTERVAL * 2},
+        ),
         expires=EVAL_INTERVAL,
     )
 
     delta_24h = datetime.timedelta(hours=24)
     sender.add_periodic_task(
         delta_24h,
-        eval_server_trust_scores.s(timedelta={"hours": 24}),
+        eval_server_trust_scores.s(
+            timedelta={"hours": 24},
+        ),
         expires=(delta_24h * 2).total_seconds(),
+    )
+
+    # Re-check ALL null trust_scores.
+    # TODO: probably only needed during active development
+    #   because trust eval algo is still evolving?
+    sender.add_periodic_task(
+        crontab(
+            hour="08",
+            minute="42",
+        ),
+        eval_server_trust_scores.s(
+            timedelta=None,
+        ),
+        expires=600,
     )
 
 
 @app.task(ignore_result=True)
 def eval_server_trust_scores(
-        timedelta: dict[str, int],
+        timedelta: dict[str, int] | None,
 ):
-    min_dt = datetime.datetime.now(tz=datetime.timezone.utc)
-    min_dt -= datetime.timedelta(**timedelta)
-    with app.db_session.begin() as sess:
-        stmt = select(db.models.GameServerState).where(
+    wheres = [
+        (db.models.GameServerState.trust_score.is_(None))
+        & (db.models.GameServerState.a2s_info_responded.is_not(None))
+        & (db.models.GameServerState.a2s_rules_responded.is_not(None))
+        & (db.models.GameServerState.a2s_players_responded.is_not(None))
+    ]
+
+    if timedelta:
+        min_dt = datetime.datetime.now(tz=datetime.timezone.utc)
+        min_dt -= datetime.timedelta(**timedelta)
+        wheres.append(
             (db.models.GameServerState.time >= min_dt)
-            & (db.models.GameServerState.trust_score.is_(None))
-            & (db.models.GameServerState.a2s_info_responded.is_not(None))
-            & (db.models.GameServerState.a2s_rules_responded.is_not(None))
-            & (db.models.GameServerState.a2s_players_responded.is_not(None))
-        ).options(
-            load_only(
-                db.models.GameServerState.game_server_port,
-                db.models.GameServerState.game_server_address,
-                db.models.GameServerState.players,
-                db.models.GameServerState.max_players,
-                db.models.GameServerState.a2s_info_responded,
-                db.models.GameServerState.a2s_player_count,
-                db.models.GameServerState.a2s_max_players,
-                db.models.GameServerState.a2s_rules_responded,
-                db.models.GameServerState.a2s_num_public_connections,
-                db.models.GameServerState.a2s_num_open_public_connections,
-                db.models.GameServerState.a2s_pi_count,
-                db.models.GameServerState.a2s_pi_objects,
-                db.models.GameServerState.a2s_players_responded,
-                db.models.GameServerState.a2s_players,
-                db.models.GameServerState.secure,
-            )
         )
+
+    stmt = select(db.models.GameServerState).where(
+        *wheres
+    ).options(
+        load_only(
+            db.models.GameServerState.game_server_port,
+            db.models.GameServerState.game_server_address,
+            db.models.GameServerState.players,
+            db.models.GameServerState.max_players,
+            db.models.GameServerState.a2s_info_responded,
+            db.models.GameServerState.a2s_player_count,
+            db.models.GameServerState.a2s_max_players,
+            db.models.GameServerState.a2s_rules_responded,
+            db.models.GameServerState.a2s_num_public_connections,
+            db.models.GameServerState.a2s_num_open_public_connections,
+            db.models.GameServerState.a2s_pi_count,
+            db.models.GameServerState.a2s_pi_objects,
+            db.models.GameServerState.a2s_players_responded,
+            db.models.GameServerState.a2s_players,
+            db.models.GameServerState.secure,
+        )
+    )
+
+    if timedelta is None:
+        stmt = stmt.execution_options(
+            yield_per=1000,
+        )
+
+    with app.db_session.begin() as sess:
         states = sess.scalars(stmt)
 
         for state in states:
