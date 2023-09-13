@@ -16,8 +16,6 @@ from celery.utils.log import get_task_logger
 from spoofspy import db
 from spoofspy.jobs.app import app
 
-# TODO: more error handling?
-
 A2S_TIMEOUT = 5.0
 
 logger: logging.Logger = get_task_logger(__name__)
@@ -124,11 +122,11 @@ def a2s_rules(
             raise
         else:
             logger.info(
-                "a2s_info error: %s %s %s: %s (max retries exceeded)",
+                "a2s_rules error: %s %s %s: %s (max retries exceeded)",
                 addr, gameport, query_time, e
             )
     except known_a2s_errors as e:
-        logger.error(
+        logger.info(
             "a2s_rules error: %s %s %s: %s",
             addr, gameport, query_time, e
         )
@@ -216,11 +214,11 @@ def a2s_players(
             raise
         else:
             logger.info(
-                "a2s_info error: %s %s %s: %s (max retries exceeded)",
+                "a2s_players error: %s %s %s: %s (max retries exceeded)",
                 addr, gameport, query_time, e
             )
     except known_a2s_errors as e:
-        logger.error(
+        logger.info(
             "a2s_players error: %s %s %s: %s",
             addr, gameport, query_time, e
         )
