@@ -20,7 +20,7 @@ player_count_x = np.array([
 # Player count difference penalty curve y values.
 player_count_y = np.array([
     0.0,
-    0.02,
+    0.01,
     0.06,
     0.2,
     0.3,
@@ -28,6 +28,73 @@ player_count_y = np.array([
     1.0,
     5.0,
 ])
+
+ww_bots = (
+    "Perttu",
+    "Antti",
+    "Mikko",
+    "Tuukka",
+    "Joni",
+    "Matti",
+    "Luukas",
+    "Valtteri",
+    "Miika",
+    "Seppo",
+    "Kyllian",
+    "Ismo",
+    "Manolis",
+    "Juuso",
+    "Veeti",
+    "Pessi",
+    "Joel",
+    "Leevi",
+    "Nalle",
+    "Aapo",
+    "Mirko",
+    "Eemeli",
+    "Kristian",
+    "Hemmu",
+    "Pasi",
+    "Oskari",
+    "Petri",
+    "Tuomo",
+    "Mauri",
+    "Topi",
+    "Juhani",
+    "Perkele",
+    "Anton",
+    "Vladimir",
+    "Pavel",
+    "Yuri",
+    "Grigoriy",
+    "Vasili",
+    "Aleksei",
+    "Georgiy",
+    "Karpov",
+    "Anatoli",
+    "Il'ya",
+    "Sergey",
+    "Nikolai",
+    "Konstantin",
+    "Artyom",
+    "Aleksandr",
+    "Petr",
+    "Gennadiy",
+    "Viktor",
+    "Evgeny",
+    "Valentin",
+    "Iosif",
+    "Boris",
+    "Andrei",
+    "Ivan",
+    "Matvei",
+    "Yakov",
+    "Ilich",
+    "Stepan",
+    "Fedor",
+    "Mikhail",
+    "Dimitri",
+)
 
 
 def _clamp(x: float, x_min: float, x_max: float) -> float:
@@ -48,6 +115,23 @@ def eval_trust_score(state: db.models.GameServerState) -> float:
     no_response_penalty = 0.33
     penalties: list[float] = []
     weights: list[float] = []
+    is_ww = False
+    is_gom3 = False
+    is_gom4 = False
+
+    muts = state.a2s_mutators_running or []
+    muts = [mut.lower() for mut in muts]
+
+    # Check known mutators/mods, be more lenient towards known bots.
+    if state.map.startswith("WW") and state.a2s_map_name.startswith("WW"):
+        logger.info(
+            "%s:%s seems to be running Winter War (%s), being more lenient with bot players",
+            state.game_server_address, state.game_server_port, state.map)
+        is_ww = True
+    elif muts and ("gom3.u" in muts):
+        is_gom3 = True
+    elif muts and ("gom4.u" in muts):
+        is_gom4 = True
 
     if not state.secure:
         penalties.append(0.1)
@@ -103,6 +187,34 @@ def eval_trust_score(state: db.models.GameServerState) -> float:
 
         steam_pi_diff = abs(players - num_steam_pi_objs)
         eos_pi_diff = abs((state.a2s_pi_count - players) - num_eos_pi_objs)
+
+        # This is a stupid way of checking bots, but the servers
+        # don't advertise their bot counts in any sensible way...
+        ww_bot_count = 0
+        gom3_bot_count = 0
+        gom4_bot_count = 0
+
+        if is_ww and (steam_pi_diff > 2) and (n_pi_count_diff > 2):
+            for _, pi_obj in pi_objs_actual:
+                if pi_obj["p"] == "STEAM" and (pi_obj["n"] in ww_bots):
+                    ww_bot_count += 1
+            penalty_fix = ww_bot_count * 0.95
+            n_pi_count_diff = abs(n_pi_count_diff - penalty_fix)
+            logger.info("%s:%s lowered n_pi_count_diff by %s, new value %s",
+                        state.game_server_address,
+                        state.game_server_port,
+                        penalty_fix,
+                        n_pi_count_diff)
+            steam_pi_diff = abs(steam_pi_diff - penalty_fix)
+            logger.info("%s:%s lowered steam_pi_diff by %s, new value %s",
+                        state.game_server_address,
+                        state.game_server_port,
+                        penalty_fix,
+                        steam_pi_diff)
+        elif is_gom3:
+            pass
+        elif is_gom4:
+            pass
 
         pi_count_conn_penalty = np.interp(
             n_pi_count_diff,

@@ -132,6 +132,9 @@ def eval_server_trust_scores(
             db.models.GameServerState.a2s_players_responded,
             db.models.GameServerState.a2s_players,
             db.models.GameServerState.secure,
+            db.models.GameServerState.map,
+            db.models.GameServerState.a2s_map_name,
+            db.models.GameServerState.a2s_mutators_running,
         )
     )
 
@@ -163,19 +166,32 @@ def query_servers():
     # TODO: need to be able to detect overlapping queries?
     with app.db_session() as sess:
         settings = sess.scalars(
-            select(db.models.QuerySettings).where(
+            select(
+                db.models.QuerySettings
+            ).where(
                 db.models.QuerySettings.is_active
             ).options(
                 load_only(
+                    db.models.QuerySettings.name,
                     db.models.QuerySettings.query_params,
                 )
             )
         )
-        qp = [s.query_params for s in settings]
+        qp = [
+            (
+                s.name,
+                s.query_params,
+            )
+            for s in settings
+        ]
 
-    for query_params in qp:
+    for name, query_params in qp:
         rand_delay = random.uniform(
             DISCOVER_DELAY_MIN, DISCOVER_DELAY_MAX)
+
+        logger.info("starting discovery: '%s' '%s' in %s",
+                    name, query_params, rand_delay)
+
         discover_servers.apply_async(
             (query_params,),
             countdown=rand_delay,
@@ -189,6 +205,8 @@ def discover_servers(query_params: Dict[str, str | int]):
     query_filter = str(query_params["filter"])
     limit = int(query_params.get("limit", 0))
     server_results = list(webapi().get_server_list(query_filter, limit))
+    # Randomize order to normalize delays between discovery to queries.
+    random.shuffle(server_results)
 
     # TODO: drop old entries based on some criteria?
     with app.db_session.begin() as sess:

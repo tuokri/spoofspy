@@ -139,6 +139,13 @@ def a2s_rules(
     num_open_pub = _pop(rules, "NumOpenPublicConnections")
     num_pub = _pop(rules, "NumPublicConnections")
     pi_count = _pop(rules, "PI_COUNT", 0)
+    mut_str = _pop(rules, "MutatorsRunning")
+    mutators_running = None
+    if mut_str:
+        mut_str = mut_str.replace("(", "")
+        mut_str = mut_str.replace(")", "")
+        mut_str = mut_str.replace('"', "")
+        mutators_running = mut_str.split(",")
 
     # TODO: refactor this loop into functions etc.
     pi_objs: dict[int, dict[str, str]] = defaultdict(dict)
@@ -183,6 +190,7 @@ def a2s_rules(
             a2s_num_public_connections=num_pub,
             a2s_pi_count=pi_count,
             a2s_pi_objects=pi_objs,
+            a2s_mutators_running=mutators_running,
             a2s_rules=rules,
         )
         sess.merge(state)

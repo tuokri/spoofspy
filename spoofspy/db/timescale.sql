@@ -46,6 +46,7 @@ CREATE TABLE "game_server_state"
     a2s_num_public_connections      INTEGER,
     a2s_pi_count                    INTEGER,
     a2s_pi_objects                  JSONB,
+    a2s_mutators_running            TEXT[],
     a2s_rules                       JSONB,
 
     -- A2S players.

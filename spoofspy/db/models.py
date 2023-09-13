@@ -284,6 +284,10 @@ class GameServerState(ReflectedBase, TimescaleModel):
         postgresql.JSONB,
         nullable=True,
     )
+    a2s_mutators_running: Mapped[list[str]] = mapped_column(
+        postgresql.ARRAY(Text),
+        nullable=True,
+    )
     # Leftovers.
     a2s_rules: Mapped[dict[str, str]] = mapped_column(
         postgresql.JSONB,
