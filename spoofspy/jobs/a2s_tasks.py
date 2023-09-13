@@ -140,7 +140,7 @@ def a2s_rules(
     num_pub = _pop(rules, "NumPublicConnections")
     pi_count = _pop(rules, "PI_COUNT", 0)
     mut_str = _pop(rules, "MutatorsRunning")
-    mutators_running = None
+    mutators_running = []
     if mut_str:
         mut_str = mut_str.replace("(", "")
         mut_str = mut_str.replace(")", "")
