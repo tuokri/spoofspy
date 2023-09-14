@@ -29,7 +29,7 @@ player_count_y = np.array([
     5.0,
 ])
 
-ww_bots = (
+ww_bots = {
     "Perttu",
     "Antti",
     "Mikko",
@@ -94,7 +94,205 @@ ww_bots = (
     "Fedor",
     "Mikhail",
     "Dimitri",
-)
+}
+
+rs2_bots = {
+    "Trang",
+    "Giang",
+    "Vuong",
+    "Huu",
+    "Hien",
+    "Duc",
+    "Trong",
+    "Tuan",
+    "Phong",
+    "Hai",
+    "Thao",
+    "Cuong",
+    "Binh",
+    "Phuoc",
+    "Anh",
+    "Danh",
+    "Hung",
+    "Nhat",
+    "Quan",
+    "Vien",
+    "Chinh",
+    "Lanh",
+    "Bao",
+    "Ngai",
+    "Sang",
+    "Thanh",
+    "Sinh",
+    "Xuan",
+    "Dien",
+    "Chien",
+    "Huynh",
+    "Minh",
+    "John",
+    "Adam",
+    "Bill",
+    "Stuart",
+    "Jack",
+    "Simon",
+    "David",
+    "Richard",
+    "Alan",
+    "Floyd",
+    "Adam",
+    "Rob",
+    "Ross",
+    "George",
+    "Ben",
+    "Javier",
+    "Dan",
+    "Thomas",
+    "Keith",
+    "Sam",
+    "Joe",
+    "Don",
+    "Toby",
+    "James",
+    "Justyn",
+    "Lewis",
+    "Nathan",
+    "Pedro",
+    "Alex",
+    "Mike",
+    "Ken",
+    "Leo",
+}
+
+gom4_bots = rs2_bots | {
+    "John",
+    "Adam",
+    "Bill",
+    "Stuart",
+    "Jack",
+    "Simon",
+    "David",
+    "Richard",
+    "Alan",
+    "Floyd",
+    "Adam",
+    "Rob",
+    "Ross",
+    "George",
+    "Ben",
+    "Javier",
+    "Dan",
+    "Thomas",
+    "Keith",
+    "Sam",
+    "Joe",
+    "Don",
+    "Toby",
+    "James",
+    "Justyn",
+    "Lewis",
+    "Nathan",
+    "Pedro",
+    "Alex",
+    "Mike",
+    "Ken",
+    "Leo",
+    "Young-Su",
+    "Seong-ho",
+    "Hong-Hyeon",
+    "Jung-Woo",
+    "Yeong-Gil",
+    "Man-Won",
+    "Yong-Sik",
+    "Jin-Tae",
+    "Tae-Su",
+    "Jung-Geun",
+    "Cheol-su",
+    "Chang-Rok",
+    "Tae-In",
+    "Won-Gyun",
+    "Jae-Young",
+    "Gyu-Tae",
+    "Mun-Seop",
+    "Jae-Pil",
+    "Byeong-Hoon",
+    "Woo-Il",
+    "Myeong-Hwan",
+    "Hwa-Jong",
+    "Woo-Sik",
+    "In-Heon",
+    "Ju-Ryong",
+    "Gyu-Hak",
+    "Young-Il",
+    "Ho-Seong",
+    "Sang-Su",
+    "Jin-Seok",
+    "Moo-Gyeong",
+    "Hee-Gyun",
+    "Trang",
+    "Giang",
+    "Vuong",
+    "Huu",
+    "Hien",
+    "Duc",
+    "Trong",
+    "Tuan",
+    "Phong",
+    "Hai",
+    "Thao",
+    "Cuong",
+    "Binh",
+    "Phuoc",
+    "Anh",
+    "Danh",
+    "Hung",
+    "Nhat",
+    "Quan",
+    "Vien",
+    "Chinh",
+    "Lanh",
+    "Bao",
+    "Ngai",
+    "Sang",
+    "Thanh",
+    "Sinh",
+    "Xuan",
+    "Dien",
+    "Chien",
+    "Huynh",
+    "Minh",
+    "Khamtai",
+    "Kaysone",
+    "Phoumi",
+    "Deuane",
+    "Kanoa",
+    "Satasin",
+    "Kale",
+    "Nugoon",
+    "Pekelo",
+    "Paxathipatai",
+    "Keanu",
+    "Makani",
+    "Xaisomboun",
+    "Kahoku",
+    "Kye",
+    "Bane",
+    "Sengprachanh",
+    "Fa Ngum",
+    "Thongsavanh",
+    "Akamu",
+    "Kapono",
+    "Siphandon",
+    "Kelii",
+    "Phonesavanh",
+    "Mao",
+    "Loe",
+    "Kawaii",
+    "Kaipo",
+    "Koa",
+    "Malo",
+    "Ikaika",
+    "Kaipo",
+}
 
 
 def _clamp(x: float, x_min: float, x_max: float) -> float:
@@ -103,6 +301,17 @@ def _clamp(x: float, x_min: float, x_max: float) -> float:
     elif x > x_max:
         return x_max
     return x
+
+
+def _bot_count(
+        pi_objs_actual: list[tuple[int, dict[str, str]]],
+        bot_names: set[str],
+) -> int:
+    bot_count = 0
+    for _, pi_obj in pi_objs_actual:
+        if pi_obj["p"] == "STEAM" and (pi_obj["n"] in bot_names):
+            bot_count += 1
+    return bot_count
 
 
 def eval_trust_score(state: db.models.GameServerState) -> float:
@@ -123,7 +332,11 @@ def eval_trust_score(state: db.models.GameServerState) -> float:
     muts = [mut.lower() for mut in muts]
 
     # Check known mutators/mods, be more lenient towards known bots.
-    if state.map.startswith("WW") and state.a2s_map_name.startswith("WW"):
+    if (
+            state.a2s_info_responded
+            and state.map.startswith("WW")
+            and state.a2s_map_name.startswith("WW")
+    ):
         logger.info(
             "%s:%s seems to be running Winter War (%s), being more lenient with bot players",
             state.game_server_address, state.game_server_port, state.map)
@@ -132,6 +345,11 @@ def eval_trust_score(state: db.models.GameServerState) -> float:
         is_gom3 = True
     elif muts and ("gom4.u" in muts):
         is_gom4 = True
+
+    if is_gom3 or is_gom4:
+        logger.info(
+            "%s:%s seems to be running GOM (%s), being more lenient with bot players",
+            state.game_server_address, state.game_server_port, state.a2s_mutators_running)
 
     if not state.secure:
         penalties.append(0.1)
@@ -190,31 +408,30 @@ def eval_trust_score(state: db.models.GameServerState) -> float:
 
         # This is a stupid way of checking bots, but the servers
         # don't advertise their bot counts in any sensible way...
-        ww_bot_count = 0
-        gom3_bot_count = 0
-        gom4_bot_count = 0
+        if (steam_pi_diff > 2) and (n_pi_count_diff > 2):
+            bot_count = 0
 
-        if is_ww and (steam_pi_diff > 2) and (n_pi_count_diff > 2):
-            for _, pi_obj in pi_objs_actual:
-                if pi_obj["p"] == "STEAM" and (pi_obj["n"] in ww_bots):
-                    ww_bot_count += 1
-            penalty_fix = ww_bot_count * 0.95
-            n_pi_count_diff = abs(n_pi_count_diff - penalty_fix)
-            logger.info("%s:%s lowered n_pi_count_diff by %s, new value %s",
-                        state.game_server_address,
-                        state.game_server_port,
-                        penalty_fix,
-                        n_pi_count_diff)
-            steam_pi_diff = abs(steam_pi_diff - penalty_fix)
-            logger.info("%s:%s lowered steam_pi_diff by %s, new value %s",
-                        state.game_server_address,
-                        state.game_server_port,
-                        penalty_fix,
-                        steam_pi_diff)
-        elif is_gom3:
-            pass
-        elif is_gom4:
-            pass
+            if is_ww:
+                bot_count = _bot_count(pi_objs_actual, ww_bots)
+            elif is_gom3:
+                bot_count = _bot_count(pi_objs_actual, rs2_bots)
+            elif is_gom4:
+                bot_count = _bot_count(pi_objs_actual, gom4_bots)
+
+            penalty_fix = bot_count * 0.95
+            if penalty_fix > 0:
+                n_pi_count_diff = abs(n_pi_count_diff - penalty_fix)
+                steam_pi_diff = abs(steam_pi_diff - penalty_fix)
+                logger.info("%s:%s lowered n_pi_count_diff by %s, new value %s",
+                            state.game_server_address,
+                            state.game_server_port,
+                            penalty_fix,
+                            n_pi_count_diff)
+                logger.info("%s:%s lowered steam_pi_diff by %s, new value %s",
+                            state.game_server_address,
+                            state.game_server_port,
+                            penalty_fix,
+                            steam_pi_diff)
 
         pi_count_conn_penalty = np.interp(
             n_pi_count_diff,
