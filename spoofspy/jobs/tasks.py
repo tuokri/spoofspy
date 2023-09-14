@@ -4,6 +4,7 @@ import ipaddress
 import logging
 import os
 import random
+import time
 from typing import Any
 from typing import Dict
 from typing import Optional
@@ -68,7 +69,7 @@ def setup_periodic_tasks(sender: Celery, **_kwargs):
         eval_server_trust_scores.s(
             timedelta={"seconds": EVAL_INTERVAL * 2},
         ),
-        expires=EVAL_INTERVAL,
+        expires=EVAL_INTERVAL + 60,
     )
 
     delta_24h = datetime.timedelta(hours=24)
@@ -99,6 +100,12 @@ def setup_periodic_tasks(sender: Celery, **_kwargs):
 def eval_server_trust_scores(
         timedelta: dict[str, int] | None,
 ):
+    # Celery doesn't have an official way of adding jitter
+    # to periodic tasks, so we simulate that here by sleeping.
+    slp = random.uniform(0.0, 25.0)
+    logger.info("sleeping %s seconds before doing work", slp)
+    time.sleep(slp)
+
     wheres = [
         (db.models.GameServerState.trust_score.is_(None))
         & (db.models.GameServerState.a2s_info_responded.is_not(None))
