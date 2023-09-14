@@ -34,6 +34,16 @@ def _should_throw_retry(task: Task) -> bool:
     return task.request.retries > task.max_retries
 
 
+def _log_timedelta(
+        start: datetime.datetime,
+        stop: datetime.datetime,
+):
+    logger.info(
+        "parent query start to A2S query stop: %s seconds",
+        (stop - start).total_seconds()
+    )
+
+
 @app.task(
     ignore_result=True,
     autoretry_for=(TimeoutError,),
@@ -94,6 +104,8 @@ def a2s_info(
             a2s_info=info_fields,
         )
         sess.merge(state)
+
+    _log_timedelta(query_time, resp_time)
 
 
 @app.task(
@@ -195,6 +207,8 @@ def a2s_rules(
         )
         sess.merge(state)
 
+    _log_timedelta(query_time, resp_time)
+
 
 @app.task(
     ignore_result=True,
@@ -253,6 +267,8 @@ def a2s_players(
             a2s_players=players,
         )
         sess.merge(state)
+
+    _log_timedelta(query_time, resp_time)
 
 
 def _coerce_tuple(x: Union[list, tuple]) -> Tuple:
