@@ -67,3 +67,11 @@ CREATE INDEX ON "game_server_state" (time DESC, trust_score);
 SELECT create_hypertable('game_server_state', 'time');
 
 SELECT add_retention_policy('game_server_state', INTERVAL '6 months');
+
+ALTER TABLE game_server_state
+    SET (
+        timescaledb.compress,
+        timescaledb.compress_segmentby = 'game_server_address, game_server_port'
+        );
+
+SELECT add_compression_policy('game_server_state', INTERVAL '14 days');
