@@ -76,7 +76,7 @@ app = CustomCelery(
     "app",
     backend=REDIS_URL,
     broker=REDIS_URL,
-    redis_max_connections=25,
+    redis_max_connections=15,
     worker_max_tasks_per_child=5000,
     task_compression="gzip",
     result_compression="gzip",
