@@ -105,7 +105,9 @@ def a2s_info(
         )
         sess.merge(state)
 
-    _log_timedelta(query_time, resp_time)
+    _log_timedelta(
+        query_time,
+        resp_time or datetime.datetime.now(tz=datetime.timezone.utc))
 
 
 @app.task(
@@ -207,7 +209,9 @@ def a2s_rules(
         )
         sess.merge(state)
 
-    _log_timedelta(query_time, resp_time)
+    _log_timedelta(
+        query_time,
+        resp_time or datetime.datetime.now(tz=datetime.timezone.utc))
 
 
 @app.task(
@@ -268,7 +272,9 @@ def a2s_players(
         )
         sess.merge(state)
 
-    _log_timedelta(query_time, resp_time)
+    _log_timedelta(
+        query_time,
+        resp_time or datetime.datetime.now(tz=datetime.timezone.utc))
 
 
 def _coerce_tuple(x: Union[list, tuple]) -> Tuple:
