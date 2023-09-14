@@ -74,4 +74,27 @@ ALTER TABLE game_server_state
         timescaledb.compress_segmentby = 'game_server_address, game_server_port'
         );
 
-SELECT add_compression_policy('game_server_state', INTERVAL '14 days');
+SELECT add_compression_policy('game_server_state', INTERVAL '10 days');
+
+
+DROP TABLE IF EXISTS "endpoint_access";
+
+-- Lightweight access log.
+CREATE TABLE "endpoint_access"
+(
+    time      TIMESTAMPTZ NOT NULL,
+    address   INET        NOT NULL,
+    unique_id BIGINT      NOT NULL
+);
+
+SELECT create_hypertable('endpoint_access', 'time');
+
+ALTER TABLE endpoint_access
+    SET (
+        timescaledb.compress,
+        timescaledb.compress_segmentby = 'unique_id'
+        );
+
+SELECT add_compression_policy('endpoint_access', INTERVAL '2 days');
+
+SELECT add_retention_policy('endpoint_access', INTERVAL '6 months');
