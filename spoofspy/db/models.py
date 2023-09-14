@@ -192,7 +192,7 @@ class TimescaleModel(BaseModel):
     time: Mapped[datetime.datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
-        primary_key=True,
+        primary_key=True,  # TODO: this is not actually true?
     )
 
 
@@ -334,4 +334,17 @@ class GameServerState(ReflectedBase, TimescaleModel):
             [game_server_address, game_server_port],
             [GameServer.address, GameServer.port],
         )
+    )
+
+
+class EndpointAccess(TimescaleModel):
+    __table_name__ = "endpoint_access"
+
+    address: Mapped[ipaddress.IPv4Address] = mapped_column(
+        postgresql.INET,
+        nullable=False,
+    )
+    unique_id: Mapped[int] = mapped_column(
+        BigInteger,
+        nullable=False,
     )
