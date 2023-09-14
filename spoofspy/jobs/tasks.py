@@ -4,13 +4,11 @@ import ipaddress
 import logging
 import os
 import random
-import time
 from typing import Any
 from typing import Dict
 from typing import Optional
 
 from celery import Celery
-from celery.schedules import crontab
 from celery.signals import beat_init
 from celery.utils.log import get_logger
 from celery.utils.log import get_task_logger
@@ -84,27 +82,81 @@ def setup_periodic_tasks(sender: Celery, **_kwargs):
     # Re-check ALL null trust_scores.
     # TODO: probably only needed during active development
     #   because trust eval algo is still evolving?
-    sender.add_periodic_task(
-        crontab(
-            hour="08",
-            minute="42",
-        ),
-        eval_server_trust_scores.s(
-            timedelta=None,
-        ),
-        expires=600,
-    )
+    # sender.add_periodic_task(
+    #     crontab(
+    #         hour="14",
+    #         minute="02",
+    #     ),
+    #     eval_server_trust_scores.s(
+    #         timedelta=None,
+    #     ),
+    #     expires=600,
+    # )
+
+    # Re-check ALL null a2s_mutators_running.
+    # TODO: probably only needed during active development
+    #   because trust eval algo is still evolving?
+    # sender.add_periodic_task(
+    #     crontab(
+    #         hour="13",
+    #         minute="27",
+    #     ),
+    #     check_muts_running.s(),
+    #     expires=600,
+    # )
+
+
+# TODO: dev only task.
+# @app.task(ignore_result=True)
+# def check_muts_running():
+#     stmt = select(db.models.GameServerState).where(
+#         (db.models.GameServerState.a2s_mutators_running.is_(None))
+#         & (db.models.GameServerState.a2s_rules_responded.is_not(None))
+#     ).options(
+#         load_only(
+#             db.models.GameServerState.a2s_mutators_running,
+#             db.models.GameServerState.a2s_rules_responded,
+#         )
+#     ).execution_options(yield_per=1000)
+#
+#     x = 0
+#     with app.db_session.begin() as sess:
+#         states = sess.scalars(stmt)
+#         for state in states:
+#             try:
+#                 mut_str = state.a2s_rules.pop("MutatorsRunning")
+#             except KeyError as e:
+#                 mut_str = ""
+#                 logger.warning("error: %s", e)
+#
+#             mutators_running = []
+#             if mut_str:
+#                 mut_str = mut_str.replace("(", "")
+#                 mut_str = mut_str.replace(")", "")
+#                 mut_str = mut_str.replace('"', "")
+#                 mutators_running = mut_str.split(",")
+#
+#             x += 1
+#             logger.info("%s %s:%s: muts running: %s",
+#                         x,
+#                         state.game_server_address,
+#                         state.game_server_port,
+#                         mutators_running,
+#                         )
+#             state.a2s_mutators_running = mutators_running
+#
+#         sess.merge(state)
 
 
 @app.task(ignore_result=True)
 def eval_server_trust_scores(
         timedelta: dict[str, int] | None,
 ):
-    # Celery doesn't have an official way of adding jitter
-    # to periodic tasks, so we simulate that here by sleeping.
-    slp = random.uniform(0.0, 25.0)
-    logger.info("sleeping %s seconds before doing work", slp)
-    time.sleep(slp)
+    # # # Celery doesn't have an official way of adding jitter
+    # # # to periodic tasks, so we simulate that here by sleeping.
+    # slp = random.uniform(0.0, 25.0)
+    # logger.info("sleeping %s seconds before doing work", slp)
+    # time.sleep(slp)
 
     wheres = [
         (db.models.GameServerState.trust_score.is_(None))
@@ -148,7 +200,7 @@ def eval_server_trust_scores(
     if timedelta is None:
         stmt = stmt.execution_options(
             yield_per=1000,
-        )
+        )  # .limit(2000)  # TODO: limit is temporary!
 
     with app.db_session.begin() as sess:
         states = sess.scalars(stmt)
