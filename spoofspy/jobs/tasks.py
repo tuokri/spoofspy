@@ -8,6 +8,9 @@ from typing import Any
 from typing import Dict
 from typing import Optional
 
+import redis
+import redis.lock
+import sqlalchemy
 from celery import Celery
 from celery.signals import beat_init
 from celery.utils.log import get_logger
@@ -15,6 +18,7 @@ from celery.utils.log import get_task_logger
 from sqlalchemy import select
 from sqlalchemy.orm import load_only
 
+from spoofspy import coding
 from spoofspy import db
 from spoofspy.heuristics import trust
 from spoofspy.jobs import a2s_tasks
@@ -26,10 +30,15 @@ from spoofspy.web import SteamWebAPI
 DISCOVER_DELAY_MIN = 0.0
 DISCOVER_DELAY_MAX = 10.0
 
+TRUST_KEY = f"_spoofspy_trust"
+TRUST_LOCK_KEY = f"_spoofspy_trust_lock"
+
 _webapi: Optional[SteamWebAPI] = None
 
 logger: logging.Logger = get_task_logger(__name__)
 beat_logger: logging.Logger = get_logger(f"beat.{__name__}")
+
+_redis_client: Optional[redis.Redis] = None
 
 
 def webapi() -> SteamWebAPI:
@@ -38,6 +47,20 @@ def webapi() -> SteamWebAPI:
         _webapi = SteamWebAPI(key=os.environ["STEAM_WEB_API_KEY"])
         logger.info("created SteamWebAPI instance: %s", _webapi)
     return _webapi
+
+
+def redis_client() -> redis.Redis:
+    global _redis_client
+    if _redis_client is None:
+        pool = redis.BlockingConnectionPool.from_url(
+            os.environ["REDIS_URL"],
+            max_connections=5,
+            timeout=30,
+        )
+        _redis_client = redis.Redis(
+            connection_pool=pool,
+        )
+    return _redis_client
 
 
 if is_prod_deployment():
@@ -77,6 +100,12 @@ def setup_periodic_tasks(sender: Celery, **_kwargs):
             timedelta={"hours": 24},
         ),
         expires=(delta_24h * 2).total_seconds(),
+    )
+
+    sender.add_periodic_task(
+        QUERY_INTERVAL,
+        cache_trust_aggregate.s(),
+        expires=QUERY_INTERVAL,
     )
 
     # Re-check ALL null trust_scores.
@@ -327,3 +356,53 @@ def query_server_state(server: Dict[str, Any]):
         (a2s_addr, gameport, query_time),
         expires=A2S_TASK_EXPIRY,
     )
+
+
+@app.task(ignore_result=True)
+def cache_trust_aggregate():
+    r = redis_client()
+    lock = redis.lock.Lock(
+        r,
+        name=TRUST_LOCK_KEY,
+        blocking=True,
+        blocking_timeout=30.0,
+        timeout=30.0,
+    )
+
+    acquired = lock.acquire()
+    if not acquired:
+        logger.error("cache_trust_aggregate unable to acquire lock")
+        return
+
+    try:
+        coder = coding.ZstdMsgPackCoder()
+        with app.db_session.begin() as sess:
+            vals = _select_trust_aggregate(sess)
+            packed = coder.encode(vals)
+            logger.info("caching trust values (len=%s) (size=%s)",
+                        len(vals), len(packed))
+            r.set(
+                name=TRUST_KEY,
+                value=packed,
+                ex=datetime.timedelta(hours=24),
+            )
+    except Exception as e:
+        logger.exception("cache_trust_aggregate error: %s", e)
+    finally:
+        if acquired:
+            lock.release()
+
+
+# TODO: deduplicate this?
+def _select_trust_aggregate(
+        session: sqlalchemy.orm.Session
+) -> list[tuple[ipaddress.IPv4Address, tuple[int, ...], tuple[float, ...]]]:
+    params = {"cutoff": 0.31}
+    ret = []
+    for row in session.execute(db.queries.trust_aggregate, params):
+        len1 = len(row[1])
+        len2 = len(row[2])
+        if len1 != len2:
+            logger.error("agg list lengths don't match: %s != %s", len1, len2)
+        ret.append((row[0], row[1], row[2]))
+    return ret
