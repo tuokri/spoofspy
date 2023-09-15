@@ -18,7 +18,7 @@ from sqlalchemy.orm import load_only
 from starlette.responses import PlainTextResponse
 
 from spoofspy import db
-from spoofspy.api import coding
+from spoofspy import coding
 
 logger = logging.getLogger(__name__)
 
