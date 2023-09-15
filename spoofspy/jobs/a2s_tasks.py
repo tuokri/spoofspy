@@ -12,6 +12,7 @@ from a2s import BrokenMessageError
 from a2s import BufferExhaustedError
 from celery import Task
 from celery.utils.log import get_task_logger
+from sqlalchemy.exc import OperationalError
 
 from spoofspy import db
 from spoofspy.jobs.app import app
@@ -46,7 +47,7 @@ def _log_timedelta(
 
 @app.task(
     ignore_result=True,
-    autoretry_for=(TimeoutError,),
+    autoretry_for=(TimeoutError, OperationalError),
     default_retry_delay=5,
     max_retries=3,
 )
@@ -112,9 +113,9 @@ def a2s_info(
 
 @app.task(
     ignore_result=True,
-    autoretry_for=(TimeoutError,),
+    autoretry_for=(TimeoutError, OperationalError),
     default_retry_delay=5,
-    max_retries=2,
+    max_retries=3,
 )
 def a2s_rules(
         addr: Tuple[str, int],
@@ -216,9 +217,9 @@ def a2s_rules(
 
 @app.task(
     ignore_result=True,
-    autoretry_for=(TimeoutError,),
+    autoretry_for=(TimeoutError, OperationalError),
     default_retry_delay=5,
-    max_retries=2,
+    max_retries=3,
 )
 def a2s_players(
         addr: Tuple[str, int],
