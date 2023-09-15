@@ -337,7 +337,7 @@ class GameServerState(ReflectedBase, TimescaleModel):
     )
 
 
-class EndpointAccess(TimescaleModel):
+class EndpointAccess(ReflectedBase, TimescaleModel):
     __tablename__ = "endpoint_access"
 
     address: Mapped[ipaddress.IPv4Address] = mapped_column(
