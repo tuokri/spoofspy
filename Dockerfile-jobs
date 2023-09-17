@@ -2,21 +2,15 @@ FROM python:3.11-slim-bullseye
 
 ENV PYTHONUNBUFFERED 1
 
-# TODO: HTOP ONLY FOR DEBUG!
 RUN apt-get update && apt-get install -y \
     dos2unix \
     gcc \
-    htop \
     libpq-dev \
     libsqlite3-dev  \
+    procps \
     python3-dev \
     tmux \
     && rm -rf /var/lib/apt/lists/*
-
-# Allow ping without root.
-RUN echo 'net.ipv4.ping_group_range = 0 2147483647' \
-    | sudo tee -a /etc/sysctl.conf \
-    && sudo sysctl -p
 
 # Created by deploy script.
 COPY requirements-jobs.txt requirements-jobs.txt

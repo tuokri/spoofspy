@@ -5,9 +5,10 @@
 
 app = "spoofspy-jobs"
 primary_region = "ams"
+swap_size_mb = 512
 
 [build]
-  dockerfile = ".\\Dockerfile-jobs"
+dockerfile = ".\\Dockerfile-jobs"
 
 #[http_service]
 #  internal_port = 8080

@@ -32,7 +32,8 @@ classifiers = [
 dependencies = [
   "SQLAlchemy[asyncio]==2.0.20",
   "celery[redis]==5.3.4",
-  "eventlet==0.33.3",
+  # "eventlet==0.33.3",
+  "eventlet @ git+ssh://git@github.com/tuokri/eventlet.git@getaddrinfo_type_fix",
   "fastapi-cache2==0.2.1",
   "fastapi==0.103.1",
   "httpx==0.24.1",
@@ -74,6 +75,9 @@ source = "vcs"
 
 [tool.hatch.build.hooks.vcs]
 version-file = "spoofspy/_version.py"
+
+[tool.hatch.metadata]
+allow-direct-references = true
 
 #[tool.hatch.envs.default]
 #dependencies = [
