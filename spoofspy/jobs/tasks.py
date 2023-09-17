@@ -403,6 +403,7 @@ def _select_trust_aggregate(
         len1 = len(row[1])
         len2 = len(row[2])
         if len1 != len2:
-            logger.error("agg list lengths don't match: %s != %s", len1, len2)
+            logger.error("agg list lengths don't match: %s != %s",
+                         len1, len2)
         ret.append((row[0], row[1], row[2]))
     return ret

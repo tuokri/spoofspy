@@ -165,7 +165,6 @@ def a2s_rules(
     # TODO: refactor this loop into functions etc.
     pi_objs: dict[int, dict[str, str]] = defaultdict(dict)
     to_del = set()
-    # ignore_idxs = set()
     for key, value in rules.items():
         if key.startswith("PI_"):
             try:
@@ -175,14 +174,7 @@ def a2s_rules(
             except ValueError:
                 continue
 
-            # if idx in ignore_idxs:
-            #     continue
-
             if key.startswith("PI_N_"):
-                # Name.
-                # if value == "<<ChatLogger>>":
-                #     ignore_idxs.add(idx)
-                #     continue
                 pi_objs[idx]["n"] = value
             elif key.startswith("PI_P_"):
                 # Platform.
