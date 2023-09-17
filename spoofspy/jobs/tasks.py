@@ -30,8 +30,8 @@ from spoofspy.web import SteamWebAPI
 DISCOVER_DELAY_MIN = 0.0
 DISCOVER_DELAY_MAX = 10.0
 
-TRUST_KEY = f"_spoofspy_trust"
-TRUST_LOCK_KEY = f"_spoofspy_trust_lock"
+TRUST_KEY = "_spoofspy_trust"
+TRUST_LOCK_KEY = "_spoofspy_trust_lock"
 
 _webapi: Optional[SteamWebAPI] = None
 

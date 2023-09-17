@@ -146,7 +146,7 @@ class QuerySettings(BaseModel):
     )
 
     def query_params_str(self) -> str:
-        return f"\\".join(
+        return "\\".join(
             f"{key}\\{value}"
             for key, value in self.query_params.items()
         )
