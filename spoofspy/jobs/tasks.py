@@ -375,7 +375,7 @@ def do_icmp_request(
         interval=0.5,
         count=2,
         timeout=5,
-        # privileged=False,
+        privileged=False,
     )
     is_alive = resp.is_alive
     logger.info(
