@@ -56,6 +56,8 @@ CREATE TABLE "game_server_state"
 
     trust_score                     REAL,
 
+    icmp_responded                  BOOLEAN,
+
     CONSTRAINT fk_game_server
         FOREIGN KEY (game_server_address, game_server_port)
             REFERENCES game_server (address, port)

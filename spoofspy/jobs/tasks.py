@@ -8,6 +8,7 @@ from typing import Any
 from typing import Dict
 from typing import Optional
 
+import icmplib
 import redis
 import redis.lock
 import sqlalchemy
@@ -296,7 +297,7 @@ def discover_servers(query_params: Dict[str, str | int]):
     # Randomize order to normalize delays between discovery to queries.
     random.shuffle(server_results)
 
-    # TODO: drop old entries based on some criteria?
+    # TODO: error handling here? Sanitize Steam API response?
     with app.db_session.begin() as sess:
         for sr in server_results:
             server = db.models.GameServer(
@@ -356,6 +357,41 @@ def query_server_state(server: Dict[str, Any]):
         (a2s_addr, gameport, query_time),
         expires=A2S_TASK_EXPIRY,
     )
+
+    do_icmp_request.apply_async(
+        (gs_result.addr, gameport, query_time),
+        expires=A2S_TASK_EXPIRY,
+    )
+
+
+@app.task(ignore_result=True)
+def do_icmp_request(
+        game_server_addr: str,
+        game_server_port: int,
+        query_time: datetime.datetime
+):
+    resp = icmplib.ping(
+        game_server_addr,
+        interval=0.5,
+        count=2,
+        timeout=5,
+        # privileged=False,
+    )
+    is_alive = resp.is_alive
+    logger.info(
+        "%s ping response: is_alive=%s avg_rtt=%s jitter=%s packet_loss=%s",
+        game_server_addr, is_alive, resp.avg_rtt, resp.jitter,
+        resp.packet_loss,
+
+    )
+    with app.db_session.begin() as sess:
+        state = db.models.GameServerState(
+            time=query_time,
+            game_server_address=game_server_addr,
+            game_server_port=game_server_port,
+            icmp_responded=is_alive,
+        )
+        sess.merge(state)
 
 
 @app.task(ignore_result=True)

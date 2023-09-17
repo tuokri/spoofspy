@@ -36,6 +36,7 @@ dependencies = [
   "fastapi-cache2==0.2.1",
   "fastapi==0.103.1",
   "httpx==0.24.1",
+  "icmplib==3.0.3",
   "msgpack==1.0.5",
   "numpy==1.25.2",
   "orjson==3.9.7",

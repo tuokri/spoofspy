@@ -329,6 +329,11 @@ class GameServerState(ReflectedBase, TimescaleModel):
         nullable=True,
     )
 
+    icmp_responded: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=True,
+    )
+
     __table__args = (
         ForeignKeyConstraint(
             [game_server_address, game_server_port],
