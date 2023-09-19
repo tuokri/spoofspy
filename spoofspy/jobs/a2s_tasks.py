@@ -91,14 +91,17 @@ def a2s_info(
     }
 
     open_slots = None
-    keywords = info_fields["keywords"]
-    r_begin = keywords.find(",r")
-    r_end = keywords.find(",")
     try:
-        open_slots = int(keywords[r_begin + 2:r_end])
-    except Exception as e:
-        logger.warning("error getting r value from '%s': %s",
-                       keywords, e)
+        keywords = info_fields["keywords"]
+        r_begin = keywords.find(",r")
+        r_end = keywords.find(",b")
+        try:
+            open_slots = int(keywords[r_begin + 2:r_end])
+        except Exception as e:
+            logger.warning("error getting r value from '%s': %s",
+                           keywords, e)
+    except KeyError:
+        pass
 
     with app.db_session.begin() as sess:
         state = db.models.GameServerState(
