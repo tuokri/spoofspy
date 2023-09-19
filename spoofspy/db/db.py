@@ -43,7 +43,9 @@ atexit.register(close_database)
 
 
 def _engine_args() -> Tuple[dict, dict, URL]:
-    connect_args = {}
+    connect_args = {
+        "connect_timeout": 10,
+    }
     pool_kwargs: dict[str, int | Type[Pool]]
 
     db_url = os.environ.get("DATABASE_URL")
@@ -55,7 +57,7 @@ def _engine_args() -> Tuple[dict, dict, URL]:
 
     # Handled by PgBouncer.
     if is_prod_deployment():
-        connect_args = {"prepare_threshold": None}
+        connect_args["prepare_threshold"] = None
         pool_kwargs = {
             "poolclass": NullPool,
         }
