@@ -317,6 +317,9 @@ def _bot_count(
 def eval_trust_score(state: db.models.GameServerState) -> float:
     """Evaluate server state trust score in range [0.0, 1.0].
     1.0 is perfect score and 0.0 is the worst possible score.
+
+    TODO: Advanced evaluation:
+      - track player score and ping changes across a period
     """
     score = 1.0
     players = state.players  # Steam only.

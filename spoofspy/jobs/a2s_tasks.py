@@ -90,6 +90,16 @@ def a2s_info(
         key, value in info
     }
 
+    open_slots = None
+    keywords = info_fields["keywords"]
+    r_begin = keywords.find(",r")
+    r_end = keywords.find(",")
+    try:
+        open_slots = int(keywords[r_begin + 2:r_end])
+    except Exception as e:
+        logger.warning("error getting r value from '%s': %s",
+                       keywords, e)
+
     with app.db_session.begin() as sess:
         state = db.models.GameServerState(
             time=query_time,
@@ -102,6 +112,7 @@ def a2s_info(
             a2s_steam_id=_pop(info_fields, "steam_id"),
             a2s_player_count=_pop(info_fields, "player_count"),
             a2s_max_players=_pop(info_fields, "max_players"),
+            a2s_open_slots=open_slots,
             a2s_info=info_fields,
         )
         sess.merge(state)

@@ -251,6 +251,7 @@ class GameServerState(ReflectedBase, TimescaleModel):
     a2s_steam_id: Mapped[int] = mapped_column(BigInteger, nullable=True)
     a2s_player_count: Mapped[int] = mapped_column(Integer, nullable=True)
     a2s_max_players: Mapped[int] = mapped_column(Integer, nullable=True)
+    a2s_open_slots: Mapped[int] = mapped_column(Integer, nullable=True)
     # Leftover fields in their raw format.
     a2s_info: Mapped[dict[str, str]] = mapped_column(
         postgresql.JSONB,

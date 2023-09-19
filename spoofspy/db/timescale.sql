@@ -37,6 +37,7 @@ CREATE TABLE "game_server_state"
     a2s_steam_id                    BIGINT,
     a2s_player_count                INTEGER,
     a2s_max_players                 INTEGER,
+    a2s_open_slots                  INTEGER,
     a2s_info                        JSONB,
 
     -- A2S rules.
