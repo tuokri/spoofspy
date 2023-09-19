@@ -31,7 +31,7 @@ classifiers = [
 # TODO: is it even worth it?
 dependencies = [
   "SQLAlchemy[asyncio]==2.0.20",
-  "celery[redis]==5.3.4",
+  "celery==5.3.4",
   # "eventlet==0.33.3",
   "eventlet @ git+https://github.com/tuokri/eventlet.git@getaddrinfo_type_fix",
   "fastapi-cache2==0.2.1",
