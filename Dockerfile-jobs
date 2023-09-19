@@ -13,6 +13,8 @@ RUN apt-get update && apt-get install -y \
     tmux \
     && rm -rf /var/lib/apt/lists/*
 
+COPY .fly/ .fly/
+
 # Created by deploy script.
 COPY requirements-jobs.txt requirements-jobs.txt
 
@@ -50,6 +52,7 @@ RUN chown -R overmind_user /home/overmind_user/
 USER overmind_user
 WORKDIR /home/overmind_user/
 
+# TODO: explicit copy instead of just copying all?
 COPY --chown=overmind_user:overmind_user ./ /home/overmind_user/
 
 RUN dos2unix ./*
