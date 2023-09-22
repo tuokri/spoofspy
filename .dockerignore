@@ -187,3 +187,6 @@ mypy.ini
 README.md
 .github/
 pyproject.toml
+
+# Ruff
+.ruff_cache/
