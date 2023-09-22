@@ -15,7 +15,7 @@ RUN apt-get update && apt-get install -y \
 
 COPY .fly/ .fly/
 
-RUN echo "-w net.ipv4.ping_group_range='0 2147483647'" > /etc/sysctl.d/local.conf
+RUN echo "net.ipv4.ping_group_range=0 2147483647" > /etc/sysctl.d/local.conf
 
 # Created by deploy script.
 COPY requirements-jobs.txt requirements-jobs.txt
