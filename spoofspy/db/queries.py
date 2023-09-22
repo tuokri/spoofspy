@@ -12,17 +12,17 @@ trust_aggregate = text(
              avg_trust_score,
              rank() OVER (
                  PARTITION BY game_server_address, game_server_port
-                 ORDER BY week_bucket DESC
+                 ORDER BY four_day_bucket DESC
                  )
             FROM (
-                SELECT time_bucket('7 days', time) AS week_bucket,
+                SELECT time_bucket('4 days', time) AS four_day_bucket,
                 avg(trust_score) AS avg_trust_score,
                 game_server_address,
                 game_server_port
                 FROM game_server_state
                 WHERE game_server_state.trust_score IS NOT NULL
-                GROUP BY game_server_address, game_server_port, week_bucket
-                ORDER BY game_server_address, game_server_port, week_bucket DESC
+                GROUP BY game_server_address, game_server_port, four_day_bucket
+                ORDER BY game_server_address, game_server_port, four_day_bucket DESC
             ) AS gss_buckets
         ) AS gss_ranked
         WHERE gss_ranked.rank = 1
