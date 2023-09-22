@@ -164,3 +164,6 @@ spoofspy/_version.py
 
 # Generated requirements files
 requirements-*.txt
+
+# Ruff
+.ruff_cache/
