@@ -63,6 +63,8 @@ def a2s_info(
     resp_time = None
     try:
         info = a2s.info(addr, timeout=A2S_TIMEOUT)
+        if len(info.keywords) > 500:
+            raise BufferExhaustedError("not processing info with keywords larger than 500 bytes")
         resp_time = datetime.datetime.now(tz=datetime.timezone.utc)
         resp = True
     except TimeoutError as e:
@@ -143,6 +145,8 @@ def a2s_rules(
     resp_time = None
     try:
         rules = a2s.rules(addr, timeout=A2S_TIMEOUT)
+        if len(rules) > 750:
+            raise BufferExhaustedError("not processing rules larger than 750 items")
         resp_time = datetime.datetime.now(tz=datetime.timezone.utc)
         resp = True
     except TimeoutError as e:
@@ -239,6 +243,8 @@ def a2s_players(
     resp_time = None
     try:
         players = a2s.players(addr, timeout=A2S_TIMEOUT)
+        if len(players) > 255:
+            raise BufferExhaustedError("not processing players larger than 255 items")
         resp = True
         resp_time = datetime.datetime.now(tz=datetime.timezone.utc)
     except TimeoutError as e:
