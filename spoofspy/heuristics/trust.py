@@ -1,3 +1,4 @@
+import ipaddress
 import logging
 
 import numpy as np
@@ -314,6 +315,14 @@ def _bot_count(
     return bot_count
 
 
+_bad = (
+    ipaddress.IPv4Address("51.222.28.26"),
+    ipaddress.IPv4Address("51.79.173.138"),
+    ipaddress.IPv4Address("51.195.45.25"),
+    ipaddress.IPv4Address("146.59.94.15"),
+)
+
+
 def eval_trust_score(state: db.models.GameServerState) -> float:
     """Evaluate server state trust score in range [0.0, 1.0].
     1.0 is perfect score and 0.0 is the worst possible score.
@@ -333,6 +342,19 @@ def eval_trust_score(state: db.models.GameServerState) -> float:
 
     muts = state.a2s_mutators_running or []
     muts = [mut.lower() for mut in muts]
+
+    if state.game_server_address in _bad:
+        logger.info("using hard-coded 0 for %s:%s",
+                    state.game_server_address, state.game_server_port)
+        return 0
+
+    if (
+            (state.game_server_address == ipaddress.IPv4Address("62.102.148.162"))
+            and (state.game_server_port == 47411)
+    ):
+        logger.info("using hard-coded 0 for %s:%s",
+                    state.game_server_address, state.game_server_port)
+        return 0
 
     # Check known mutators/mods, be more lenient towards known bots.
     if (
