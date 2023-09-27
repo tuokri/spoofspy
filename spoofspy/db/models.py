@@ -94,6 +94,11 @@ class BaseModel(PrettyReprMixin, AsyncAttrs, DeclarativeBase):
 
 
 class QueryStatistics(BaseModel):
+    # TODO: this could simply be a name-value table.
+    #   E.g. name:text - value:bigint:
+    #   steam_web_api_queries   -  x
+    #   some_other_query_state  -  y
+
     __tablename__ = "query_statistics"
 
     id: Mapped[bool] = mapped_column(
