@@ -1,6 +1,6 @@
 # spoofspy
 
-Experimental app for detecting and displaying spoofed redirect servers on Steam.
+Experimental app for detecting and displaying spoofed/redirect servers on Steam.
 
 Supported games: Rising Storm 2: Vietnam.
 
