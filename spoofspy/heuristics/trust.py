@@ -331,6 +331,12 @@ def eval_trust_score(state: db.models.GameServerState) -> float:
 
     TODO: Advanced evaluation:
       - track player score and ping changes across a period
+
+    TODO: use a2s_open_slots.
+
+    TODO: there's potential for false positives and false
+      negatives with bot name checking. Players can also
+      have bot names. But does this really matter?
     """
     score = 1.0
     players = state.players  # Steam only.
