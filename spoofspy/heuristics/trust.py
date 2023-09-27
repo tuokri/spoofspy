@@ -7,6 +7,9 @@ from spoofspy import db
 
 logger = logging.getLogger(__name__)
 
+# TODO: store penalty curve and algorithm versions in db?
+#   - Ability do discern evaluations done on different versions.
+
 # Player count difference penalty curve x values.
 player_count_x = np.array([
     0,
