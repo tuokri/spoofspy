@@ -315,6 +315,8 @@ def _bot_count(
     return bot_count
 
 
+# NOTE: hard-coding score for these now, need to improve
+# score evaluation algorithm to detect these better.
 _bad = (
     ipaddress.IPv4Address("51.222.28.26"),
     ipaddress.IPv4Address("51.79.173.138"),
