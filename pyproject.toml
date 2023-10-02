@@ -38,7 +38,7 @@ dependencies = [
   "fastapi==0.103.1",
   "httpx==0.25.0",
   "icmplib==3.0.3",
-  "msgpack==1.0.6",
+  "msgpack==1.0.7",
   "numpy==1.26.0",
   "orjson==3.9.7",
   "psycopg==3.1.12",
