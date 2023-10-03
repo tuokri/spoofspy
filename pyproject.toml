@@ -35,7 +35,7 @@ dependencies = [
   # "eventlet==0.33.3",
   "eventlet @ git+https://github.com/tuokri/eventlet.git@getaddrinfo_type_fix",
   "fastapi-cache2==0.2.1",
-  "fastapi==0.103.1",
+  "fastapi==0.103.2",
   "httpx==0.25.0",
   "icmplib==3.0.3",
   "msgpack==1.0.7",
