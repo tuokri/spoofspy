@@ -306,10 +306,17 @@ def discover_servers(query_params: Dict[str, str | int]):
     query_filter = str(query_params["filter"])
     limit = int(query_params.get("limit", 0))
     server_results = list(webapi().get_server_list(query_filter, limit))
+
+    if not server_results:
+        logger.warning("did not get any server results for query: %s",
+                       query_params)
+        return
+
     # Randomize order to normalize delays between discovery to queries.
     random.shuffle(server_results)
 
     # TODO: error handling here? Sanitize Steam API response?
+    # TODO: UPSERTS, UPERTS, UPSERTS...
     with app.db_session.begin() as sess:
         for sr in server_results:
             server = db.models.GameServer(
@@ -355,7 +362,7 @@ def query_server_state(server: Dict[str, Any]):
             os=gs_result.os,
             gametype=gs_result.gametype,
         )
-        sess.merge(state)
+        sess.add(state)
 
     a2s_tasks.a2s_info.apply_async(
         (a2s_addr, gameport, query_time),
