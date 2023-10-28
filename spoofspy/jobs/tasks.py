@@ -16,7 +16,9 @@ from celery import Celery
 from celery.signals import beat_init
 from celery.utils.log import get_logger
 from celery.utils.log import get_task_logger
+from sqlalchemy import bindparam
 from sqlalchemy import select
+from sqlalchemy import update
 from sqlalchemy.orm import load_only
 
 from spoofspy import coding
@@ -41,6 +43,9 @@ beat_logger: logging.Logger = get_logger(f"beat.{__name__}")
 
 _redis_client: Optional[redis.Redis] = None
 
+
+# TODO: use upserts instead of merging in a loop!
+# https://docs.sqlalchemy.org/en/20/orm/queryguide/dml.html#orm-queryguide-upsert
 
 def webapi() -> SteamWebAPI:
     global _webapi
@@ -232,22 +237,29 @@ def eval_server_trust_scores(
             yield_per=1000,
         )  # .limit(2000)  # TODO: limit is temporary!
 
+    update_wheres = [
+        (db.models.GameServerState.game_server_port == bindparam("u_game_server_port"))
+        & (db.models.GameServerState.game_server_address == bindparam("u_game_server_address"))
+        & (db.models.GameServerState.time == bindparam("u_time"))
+    ]
+
     with app.db_session.begin() as sess:
         states = sess.scalars(stmt)
 
-        for state in states:
-            try:
-                trust_score = trust.eval_trust_score(state)
-                logger.info(
-                    "%s:%s: score: %s",
-                    state.game_server_address,
-                    state.game_server_port,
-                    trust_score,
-                )
-                state.trust_score = trust_score
-                sess.merge(state)
-            except Exception as e:
-                logger.exception("error evaluating trust score: %s", e)
+        sess.connection().execute(
+            update(db.models.GameServerState).where(
+                *update_wheres,
+            ),
+            [
+                {
+                    "u_game_server_port": state.game_server_port,
+                    "u_game_server_address": state.game_server_address,
+                    "u_time": state.time,
+                    "trust_score": trust.eval_trust_score(state)
+                }
+                for state in states
+            ],
+        )
 
 
 @app.task(ignore_result=True)

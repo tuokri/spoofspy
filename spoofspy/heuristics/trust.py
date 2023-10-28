@@ -332,6 +332,10 @@ def eval_trust_score(state: db.models.GameServerState) -> float:
     """Evaluate server state trust score in range [0.0, 1.0].
     1.0 is perfect score and 0.0 is the worst possible score.
 
+    TODO: (IMPORTANT/STABILITY):
+      - make this function exception safe, return null
+        on failure and log it
+
     TODO: Advanced evaluation:
       - track player score and ping changes across a period
 
@@ -532,4 +536,12 @@ def eval_trust_score(state: db.models.GameServerState) -> float:
     for penalty, weight in zip(penalties, weights):
         score -= penalty * weight
 
-    return _clamp(score, 0.0, 1.0)
+    trust_score = _clamp(score, 0.0, 1.0)
+    logger.info(
+        "%s:%s: score: %s",
+        state.game_server_address,
+        state.game_server_port,
+        trust_score,
+    )
+
+    return trust_score
