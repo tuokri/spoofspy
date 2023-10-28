@@ -24,23 +24,7 @@ register(
 
 
 def _make_session() -> sessionmaker:
-    return sessionmaker(db.engine(dispose=True))
-
-
-@worker_init.connect
-def _init_worker(*_args, **_kwargs):
-    # TODO: this can fail quietly?
-    global _DB_SESSION
-
-    # noinspection PyProtectedMember
-    if not all((_DB_SESSION, app._db_session)):
-        _DB_SESSION = _make_session()
-        app._db_session = _DB_SESSION
-
-
-@worker_shutdown.connect
-def _shutdown_worker(*_args, **_kwargs):
-    db.close_database()
+    return sessionmaker(db.engine(dispose=False))
 
 
 REDIS_URL = os.environ["REDIS_URL"]
@@ -98,15 +82,31 @@ app = CustomCelery(
     ],
 )
 
+
 # NOTE: can't use msgpack as event_serializer.
 # See: https://github.com/celery/celery/issues/8285
 
 
+@worker_shutdown.connect
+def _shutdown_worker(*_args, **_kwargs):
+    db.close_database()
+
+
 _SENTRY_DSN = os.environ.get("SENTRY_DSN")
-if _SENTRY_DSN:
-    @celeryd_init.connect
-    def init_sentry(**_kwargs):
+
+
+@celeryd_init.connect
+def _celeryd_init(**_kwargs):
+    if _SENTRY_DSN:
         sentry_sdk.init(
             dsn=_SENTRY_DSN,
             enable_tracing=True,
         )
+
+    # TODO: this can fail quietly?
+    global _DB_SESSION
+
+    # noinspection PyProtectedMember
+    if not all((_DB_SESSION, app._db_session)):
+        _DB_SESSION = _make_session()
+        app._db_session = _DB_SESSION
