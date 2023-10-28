@@ -5,6 +5,11 @@ CREATE EXTENSION IF NOT EXISTS timescaledb;
 
 DROP TABLE IF EXISTS "game_server_state";
 
+-- TODO: need to support multiple "probing" nodes.
+--   - should be able to fetch info for servers with geo IP blocks, e.g. China?
+--   - add field for probe node ID and or address to determine which node did the A2S etc. jobs
+--   - setup a system of distributed Celery nodes
+
 -- Currently specific to Rising Storm 2: Vietnam.
 CREATE TABLE "game_server_state"
 (
