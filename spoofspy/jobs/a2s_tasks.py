@@ -1,4 +1,5 @@
 import datetime
+import ipaddress
 import logging
 import socket
 from collections import defaultdict
@@ -12,6 +13,7 @@ from a2s import BrokenMessageError
 from a2s import BufferExhaustedError
 from celery import Task
 from celery.utils.log import get_task_logger
+from sqlalchemy import update
 from sqlalchemy.exc import OperationalError
 
 from spoofspy import db
@@ -105,22 +107,25 @@ def a2s_info(
     except KeyError:
         pass
 
+    ip_addr_obj = ipaddress.IPv4Address(addr[0])
+    stmt = update(db.models.GameServerState).where(
+        (db.models.GameServerState.time == query_time)
+        & (db.models.GameServerState.game_server_address == ip_addr_obj)
+        & (db.models.GameServerState.game_server_port == gameport)
+    ).values(
+        a2s_info_responded=resp,
+        a2s_info_response_time=resp_time,
+        a2s_server_name=_pop(info_fields, "server_name"),
+        a2s_map_name=_pop(info_fields, "map_name"),
+        a2s_steam_id=_pop(info_fields, "steam_id"),
+        a2s_player_count=_pop(info_fields, "player_count"),
+        a2s_max_players=_pop(info_fields, "max_players"),
+        a2s_open_slots=open_slots,
+        a2s_info=info_fields,
+    )
+
     with app.db_session.begin() as sess:
-        state = db.models.GameServerState(
-            time=query_time,
-            game_server_address=addr[0],
-            game_server_port=gameport,
-            a2s_info_responded=resp,
-            a2s_info_response_time=resp_time,
-            a2s_server_name=_pop(info_fields, "server_name"),
-            a2s_map_name=_pop(info_fields, "map_name"),
-            a2s_steam_id=_pop(info_fields, "steam_id"),
-            a2s_player_count=_pop(info_fields, "player_count"),
-            a2s_max_players=_pop(info_fields, "max_players"),
-            a2s_open_slots=open_slots,
-            a2s_info=info_fields,
-        )
-        sess.merge(state)
+        sess.execute(stmt)
 
     _log_timedelta(
         query_time,
@@ -204,21 +209,24 @@ def a2s_rules(
     for key in to_del:
         del rules[key]
 
+    ip_addr_obj = ipaddress.IPv4Address(addr[0])
+    stmt = update(db.models.GameServerState).where(
+        (db.models.GameServerState.time == query_time)
+        & (db.models.GameServerState.game_server_address == ip_addr_obj)
+        & (db.models.GameServerState.game_server_port == gameport)
+    ).values(
+        a2s_rules_responded=resp,
+        a2s_rules_response_time=resp_time,
+        a2s_num_open_public_connections=num_open_pub,
+        a2s_num_public_connections=num_pub,
+        a2s_pi_count=pi_count,
+        a2s_pi_objects=pi_objs,
+        a2s_mutators_running=mutators_running,
+        a2s_rules=rules,
+    )
+
     with app.db_session.begin() as sess:
-        state = db.models.GameServerState(
-            time=query_time,
-            game_server_address=addr[0],
-            game_server_port=gameport,
-            a2s_rules_responded=resp,
-            a2s_rules_response_time=resp_time,
-            a2s_num_open_public_connections=num_open_pub,
-            a2s_num_public_connections=num_pub,
-            a2s_pi_count=pi_count,
-            a2s_pi_objects=pi_objs,
-            a2s_mutators_running=mutators_running,
-            a2s_rules=rules,
-        )
-        sess.merge(state)
+        sess.execute(stmt)
 
     _log_timedelta(
         query_time,
@@ -274,16 +282,19 @@ def a2s_players(
         } for player in players
     ]
 
+    ip_addr_obj = ipaddress.IPv4Address(addr[0])
+    stmt = update(db.models.GameServerState).where(
+        (db.models.GameServerState.time == query_time)
+        & (db.models.GameServerState.game_server_address == ip_addr_obj)
+        & (db.models.GameServerState.game_server_port == gameport)
+    ).values(
+        a2s_players_responded=resp,
+        a2s_players_response_time=resp_time,
+        a2s_players=players,
+    )
+
     with app.db_session.begin() as sess:
-        state = db.models.GameServerState(
-            time=query_time,
-            game_server_address=addr[0],
-            game_server_port=gameport,
-            a2s_players_responded=resp,
-            a2s_players_response_time=resp_time,
-            a2s_players=players,
-        )
-        sess.merge(state)
+        sess.execute(stmt)
 
     _log_timedelta(
         query_time,
