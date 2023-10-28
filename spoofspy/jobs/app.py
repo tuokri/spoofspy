@@ -1,6 +1,8 @@
 import os
 
+import sentry_sdk
 from celery import Celery
+from celery.signals import celeryd_init
 from celery.signals import worker_init
 from celery.signals import worker_shutdown
 from celery.utils.log import get_logger
@@ -98,3 +100,13 @@ app = CustomCelery(
 
 # NOTE: can't use msgpack as event_serializer.
 # See: https://github.com/celery/celery/issues/8285
+
+
+_SENTRY_DSN = os.environ.get("SENTRY_DSN")
+if _SENTRY_DSN:
+    @celeryd_init.connect
+    def init_sentry(**_kwargs):
+        sentry_sdk.init(
+            dsn=_SENTRY_DSN,
+            enable_tracing=True,
+        )
