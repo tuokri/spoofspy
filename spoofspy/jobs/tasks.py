@@ -19,6 +19,7 @@ from celery.utils.log import get_task_logger
 from sqlalchemy import bindparam
 from sqlalchemy import select
 from sqlalchemy import update
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import load_only
 
 from spoofspy import coding
@@ -316,15 +317,24 @@ def discover_servers(query_params: Dict[str, str | int]):
     random.shuffle(server_results)
 
     # TODO: error handling here? Sanitize Steam API response?
-    # TODO: UPSERTS, UPERTS, UPSERTS...
+
+    stmt = pg_insert(db.models.GameServer).values(
+        [
+            {
+                "address": ipaddress.IPv4Address(sr.addr),
+                "port": sr.gameport,
+                "query_port": int(sr.query_port),
+            }
+            for sr in server_results
+        ]
+    )
+    on_update_stmt = stmt.on_conflict_do_update(
+        index_elements=["address", "port"],
+        set_={"query_port": stmt.excluded.query_port},
+    )
+
     with app.db_session.begin() as sess:
-        for sr in server_results:
-            server = db.models.GameServer(
-                address=ipaddress.IPv4Address(sr.addr),
-                port=sr.gameport,
-                query_port=int(sr.query_port),
-            )
-            sess.merge(server)
+        sess.execute(on_update_stmt)
 
     for sr in server_results:
         query_server_state.apply_async(
