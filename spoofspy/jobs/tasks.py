@@ -339,6 +339,8 @@ def query_server_state(server: Dict[str, Any]):
     a2s_addr = (gs_result.addr, gs_result.query_port)
     gameport = gs_result.gameport
 
+    # TODO: this should be set earlier, when the Steam API request
+    #   happens? That would be closer to reality.
     query_time = datetime.datetime.now(tz=datetime.timezone.utc)
 
     with app.db_session.begin() as sess:
