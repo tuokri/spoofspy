@@ -308,6 +308,9 @@ def discover_servers(query_params: Dict[str, str | int]):
     limit = int(query_params.get("limit", 0))
     server_results = list(webapi().get_server_list(query_filter, limit))
 
+    # TODO: parse IP addresses into objects here and pass them into
+    #  further tasks as objects to avoid doing the conversions multiple times?
+
     if not server_results:
         logger.warning("did not get any server results for query: %s",
                        query_params)
@@ -415,14 +418,19 @@ def do_icmp_request(
         resp.packet_loss,
 
     )
+
+    addr = ipaddress.IPv4Address(game_server_addr)
+
+    stmt = update(db.models.GameServerState).where(
+        (db.models.GameServerState.time == query_time)
+        & (db.models.GameServerState.game_server_address == addr)
+        & (db.models.GameServerState.game_server_port == game_server_port)
+    ).values(
+        icmp_responded=is_alive,
+    )
+
     with app.db_session.begin() as sess:
-        state = db.models.GameServerState(
-            time=query_time,
-            game_server_address=game_server_addr,
-            game_server_port=game_server_port,
-            icmp_responded=is_alive,
-        )
-        sess.merge(state)
+        sess.execute(stmt)
 
 
 @app.task(ignore_result=True)
