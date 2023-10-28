@@ -2,7 +2,7 @@ import signal
 
 import psutil
 
-LIMIT = 200_000_000  # 200 MB.
+LIMIT = 300_000_000  # 300 MB.
 
 
 def main():
