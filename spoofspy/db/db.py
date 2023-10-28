@@ -44,7 +44,7 @@ atexit.register(close_database)
 
 def _engine_args() -> Tuple[dict, dict, URL]:
     connect_args = {
-        "connect_timeout": 10,
+        "connect_timeout": 30,
     }
     pool_kwargs: dict[str, int | Type[Pool]]
 
