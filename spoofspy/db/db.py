@@ -65,7 +65,7 @@ def _engine_args() -> Tuple[dict, dict, URL]:
         # Development env pool.
         pool_kwargs = {
             "poolclass": QueuePool,
-            "pool_size": 30,
+            "pool_size": 250,
         }
 
     return connect_args, pool_kwargs, url
