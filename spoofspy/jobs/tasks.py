@@ -247,6 +247,15 @@ def eval_server_trust_scores(
     with app.db_session.begin() as sess:
         states = sess.scalars(stmt)
 
+        # TODO: do this in blocks? yield_per=x?
+        states_values = states.all()
+
+        if not states_values:
+            logger.info("no game server states with timedelta: %s", timedelta)
+            return
+
+        logger.info("evaluating trust score for %s states", len(states_values))
+
         sess.connection().execute(
             update(db.models.GameServerState).where(
                 *update_wheres,
@@ -258,7 +267,7 @@ def eval_server_trust_scores(
                     "u_time": state.time,
                     "trust_score": trust.eval_trust_score(state)
                 }
-                for state in states
+                for state in states_values
             ],
         )
 

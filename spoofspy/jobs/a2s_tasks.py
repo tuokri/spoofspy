@@ -59,14 +59,12 @@ def a2s_info(
         query_time: datetime.datetime,
 ):
     addr = _coerce_tuple(addr)
-    info = {}
+    info: a2s.SourceInfo | None = None
 
     resp = False
     resp_time = None
     try:
         info = a2s.info(addr, timeout=A2S_TIMEOUT)
-        if len(info.keywords) > 500:
-            raise BufferExhaustedError("not processing info with keywords larger than 500 bytes")
         resp_time = datetime.datetime.now(tz=datetime.timezone.utc)
         resp = True
     except TimeoutError as e:
@@ -88,6 +86,14 @@ def a2s_info(
             "a2s_info exception: %s %s %s: %s",
             addr, gameport, query_time, e
         )
+
+    if not info:
+        logger.warning("no A2S info (%s) for %s", info, addr)
+        return
+
+    # TODO: keywords is optional, check its existence.
+    if info and len(info.keywords) > 500:
+        raise BufferExhaustedError("not processing info with keywords larger than 500 bytes")
 
     info_fields = {
         key: value for
