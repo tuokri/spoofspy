@@ -89,7 +89,7 @@ class SteamWebAPI:
             resp = self._client.get(url)
             resp.raise_for_status()
             self.api_requests += 1
-            servers = orjson.loads(resp.content)["response"]["servers"]
+            servers = orjson.loads(resp.text)["response"]["servers"]
         except Exception as e:
             logger.exception("error processing GET '%s': %s", url, e)
             servers = []
