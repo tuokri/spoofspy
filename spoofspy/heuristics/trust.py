@@ -460,8 +460,8 @@ def eval_trust_score(state: db.models.GameServerState) -> float:
 
             penalty_fix = bot_count * 0.95
             if penalty_fix > 0:
-                n_pi_count_diff = abs(n_pi_count_diff - penalty_fix)
-                steam_pi_diff = abs(steam_pi_diff - penalty_fix)
+                n_pi_count_diff = abs(n_pi_count_diff - penalty_fix)  # type: ignore[assignment]
+                steam_pi_diff = abs(steam_pi_diff - penalty_fix)  # type: ignore[assignment]
                 logger.info("%s:%s lowered n_pi_count_diff by %s, new value %s",
                             state.game_server_address,
                             state.game_server_port,
