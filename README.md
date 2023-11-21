@@ -4,6 +4,13 @@ Experimental app for detecting and displaying spoofed/redirect servers on Steam.
 
 Supported games: Rising Storm 2: Vietnam.
 
+## TODO
+
+- Import `_version.py` to make it available in releases.
+    - Actually, consider if we want to do this? There seem to
+      be many opinions on whether having a __version__ attribute
+      is the right way to do it.
+
 # License
 
 ```
