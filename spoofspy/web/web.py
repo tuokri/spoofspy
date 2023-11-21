@@ -50,10 +50,12 @@ class SteamWebAPI:
     # TODO: thread safety?
     api_requests: int = 0
 
-    def __init__(self, key: str, timeout: float = 30.0):
+    def __init__(self, key: str, timeout: float = 30.0, retries: int = 3):
         self._key = key
         # TODO: redact sensitive information from httpx logs.
-        self._client = httpx.Client(verify=SSL_CONTEXT, timeout=timeout)
+        transport = httpx.HTTPTransport(retries=retries)
+        self._client = httpx.Client(
+            verify=SSL_CONTEXT, timeout=timeout, transport=transport)
         self._db_session = sessionmaker(db.engine())
 
     def __del__(self):
