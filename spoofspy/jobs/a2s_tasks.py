@@ -58,7 +58,7 @@ def a2s_info(
         gameport: int,
         query_time: datetime.datetime,
 ):
-    addr = _coerce_tuple(addr)
+    addr = _coerce_tuple(addr)  # type: ignore[assignment]
     info: a2s.SourceInfo | None = None
 
     resp = False
@@ -149,7 +149,7 @@ def a2s_rules(
         gameport: int,
         query_time: datetime.datetime,
 ):
-    addr = _coerce_tuple(addr)
+    addr = _coerce_tuple(addr)  # type: ignore[assignment]
     rules: Dict[str, str] = {}
 
     resp = False
@@ -250,7 +250,7 @@ def a2s_players(
         gameport: int,
         query_time: datetime.datetime,
 ):
-    addr = _coerce_tuple(addr)
+    addr = _coerce_tuple(addr)  # type: ignore[assignment]
     players = []
 
     resp = False
