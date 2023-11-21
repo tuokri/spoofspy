@@ -4,10 +4,14 @@ import ipaddress
 import logging
 import os
 import random
+from collections import defaultdict
+from concurrent import futures
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 from typing import Dict
 from typing import Optional
 
+import a2s
 import icmplib
 import redis
 import redis.lock
@@ -205,7 +209,7 @@ def eval_server_trust_scores(
         min_dt = datetime.datetime.now(tz=datetime.timezone.utc)
         min_dt -= datetime.timedelta(**timedelta)
         wheres.append(
-            (db.models.GameServerState.time >= min_dt)
+            (db.models.GameServerState.time >= min_dt)  # type: ignore[arg-type]
         )
 
     stmt = select(db.models.GameServerState).where(
@@ -310,6 +314,15 @@ def query_servers():
         )
 
 
+def _responds_to_a2s(addr: tuple[str, int]) -> bool:
+    try:
+        a2s.info(addr, timeout=5.0)
+        return True
+    except Exception as e:
+        logger.debug("a2s.info error: %s", e, exc_info=True)
+    return False
+
+
 @app.task(ignore_result=True)
 def discover_servers(query_params: Dict[str, str | int]):
     # Don't allow empty filters for now.
@@ -324,6 +337,83 @@ def discover_servers(query_params: Dict[str, str | int]):
         logger.warning("did not get any server results for query: %s",
                        query_params)
         return
+
+    # Detect duplicated servers i.e. servers that have same
+    # address:gameport but different query port. It's possible
+    # to register duplicated servers with the master server, but
+    # it really does not make sense from game client POV,
+    # since only one of them will be able to respond to A2S queries.
+    # TODO: discard servers with gameport == query_port before doing
+    #  this complex black magic fuckery to make our life easier...
+    #  ALSO ADD SOME UNIT TESTING THIS IS GETTING RIDICULOUS.
+    duplicates: defaultdict[
+        tuple[str, int], list[tuple[GameServerResult, bool]]] = defaultdict(list)
+    all_seen: defaultdict[tuple[str, int], int] = defaultdict(int)
+    for sr in server_results:
+        key = (sr.addr, sr.gameport)
+        all_seen[key] += 1
+
+    for seen_add_port, seen_count in all_seen.items():
+        if seen_count > 1:
+            for sr in server_results:
+                if (sr.addr == seen_add_port[0]) and (sr.gameport == seen_add_port[1]):
+                    logger.warning(
+                        "duplicated server detected: %s:%s [%s], seen earlier as: %s",
+                        sr.addr, sr.gameport, sr.name, seen_add_port)
+                    # (GameServerResult, a2s_responded?).
+                    duplicates[seen_add_port].append((sr, False))
+
+    print(duplicates)
+
+    # TODO: refactor info a function.
+    # TODO: refactor complex nested structures.
+    if duplicates:
+        # From duplicated servers, detect the "real" server by checking
+        # which of the duplicates successfully answers to A2S queries.
+        # If none of them answer, select the first seen one. This is kind
+        # of shoddy, but the best we can do to weed out the "fake" ones.
+        # TODO: maybe simplify this. Some other data structure must be better.
+        # noinspection PyTypeChecker
+        fut_to_server: dict[
+            futures.Future, tuple[tuple[str, int], GameServerResult, int]
+        ] = {}
+        cpu_count = os.cpu_count() or 1
+        with ThreadPoolExecutor(max_workers=cpu_count * 4) as executor:
+            for dupl_key in duplicates:
+                for i, (dup_serv, _) in enumerate(duplicates[dupl_key]):
+                    fut: futures.Future = executor.submit(
+                        _responds_to_a2s,
+                        (dup_serv.addr, dup_serv.query_port),
+                    )
+                    # noinspection PyTypeChecker
+                    fut_to_server[fut] = (dupl_key, dup_serv, i)
+
+        to_remove: list[GameServerResult] = []
+        done_futs, not_done_futs = futures.wait(fut_to_server, timeout=30.0)
+        for done_fut in done_futs:
+            dupl_key, dup_serv, i = fut_to_server[fut]
+            a2s_responded: bool = done_fut.result()
+            # TODO: maybe use dataclass to avoid copy and write again here.
+            duplicates[dupl_key][i] = (dup_serv, a2s_responded)
+
+        print(duplicates)
+
+        for dupl_servs in duplicates.values():
+            # No A2S responses, use first server, discard rest.
+            if not any((x[1]) for x in dupl_servs):
+                to_remove.extend((x[0] for x in dupl_servs[1:]))
+            # Pick first server that did respond. If multiple servers
+            # responded, we just ignore it. It *should not* be possible
+            # for multiple duplicated servers to respond to the query!
+            else:
+                for serv, resp_ok in dupl_servs:
+                    if resp_ok:
+                        to_remove.append(serv)
+                        break
+
+        for to_rem in to_remove:
+            logger.info("removing duplicated server: %s from results", to_rem)
+            server_results.remove(to_rem)
 
     # Randomize order to normalize delays between discovery to queries.
     random.shuffle(server_results)
@@ -342,7 +432,9 @@ def discover_servers(query_params: Dict[str, str | int]):
     )
     on_update_stmt = stmt.on_conflict_do_update(
         index_elements=["address", "port"],
-        set_={"query_port": stmt.excluded.query_port},
+        set_={
+            "query_port": stmt.excluded.query_port,
+        },
     )
 
     with app.db_session.begin() as sess:
