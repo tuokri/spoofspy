@@ -3,7 +3,6 @@ import os
 import sentry_sdk
 from celery import Celery
 from celery.signals import celeryd_init
-from celery.signals import worker_init
 from celery.signals import worker_shutdown
 from celery.utils.log import get_logger
 from kombu.serialization import register
@@ -42,7 +41,7 @@ class CustomCelery(Celery):
     def db_session(self) -> sessionmaker:
         global _DB_SESSION
 
-        # This should be done in `worker_init` before we even
+        # This should be done in `celeryd_init` before we even
         # get here, but somehow this has happened (although very rarely)
         # during development and testing.
         if not all((_DB_SESSION, self._db_session)):
@@ -50,7 +49,7 @@ class CustomCelery(Celery):
             _DB_SESSION = _make_session()
             self._db_session = _DB_SESSION
 
-        return self._db_session
+        return self._db_session  # type: ignore[return-value]
 
 
 _accept_content = [
