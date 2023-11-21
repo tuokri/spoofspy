@@ -57,7 +57,7 @@ def _engine_args() -> Tuple[dict, dict, URL]:
 
     # Handled by PgBouncer.
     if is_prod_deployment():
-        connect_args["prepare_threshold"] = None
+        connect_args["prepare_threshold"] = None  # type: ignore[assignment]
         pool_kwargs = {
             "poolclass": NullPool,
         }
