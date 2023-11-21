@@ -363,8 +363,6 @@ def discover_servers(query_params: Dict[str, str | int]):
                     # (GameServerResult, a2s_responded?).
                     duplicates[seen_add_port].append((sr, False))
 
-    print(duplicates)
-
     # TODO: refactor info a function.
     # TODO: refactor complex nested structures.
     if duplicates:
@@ -395,8 +393,6 @@ def discover_servers(query_params: Dict[str, str | int]):
             a2s_responded: bool = done_fut.result()
             # TODO: maybe use dataclass to avoid copy and write again here.
             duplicates[dupl_key][i] = (dup_serv, a2s_responded)
-
-        print(duplicates)
 
         for dupl_servs in duplicates.values():
             # No A2S responses, use first server, discard rest.
