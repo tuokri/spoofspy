@@ -44,7 +44,7 @@ dependencies = [
   "psycopg==3.1.12",
   "python-a2s==1.3.0",
   "redis[hiredis]==5.0.1",
-  "sentry-sdk[celery]==1.32.0",
+  "sentry-sdk[celery]==1.37.1",
   "uvicorn[standard]==0.24.0.post1",
   "zstandard==0.21.0",
   # "eventlet==0.33.3",
