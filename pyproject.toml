@@ -46,7 +46,7 @@ dependencies = [
   "redis[hiredis]==5.0.1",
   "sentry-sdk[celery]==1.37.1",
   "uvicorn[standard]==0.24.0.post1",
-  "zstandard==0.21.0",
+  "zstandard==0.22.0",
   # "eventlet==0.33.3",
 ]
 [project.optional-dependencies]
