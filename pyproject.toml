@@ -34,7 +34,7 @@ dependencies = [
   "celery==5.3.4",
   "eventlet @ git+https://github.com/tuokri/eventlet.git@getaddrinfo_type_fix",
   "fastapi-cache2==0.2.1",
-  "fastapi==0.104.0",
+  "fastapi==0.104.1",
   "httpx==0.25.1",
   "icmplib==3.0.4",
   "msgpack==1.0.7",
