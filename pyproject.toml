@@ -32,9 +32,9 @@ classifiers = [
 dependencies = [
   "SQLAlchemy[asyncio]==2.0.23",
   "celery==5.3.4",
-  "eventlet @ git+https://github.com/tuokri/eventlet.git@getaddrinfo_type_fix",
   "fastapi-cache2==0.2.1",
   "fastapi==0.104.1",
+  "gevent==23.9.1",
   "httpx==0.25.1",
   "icmplib==3.0.4",
   "msgpack==1.0.7",
@@ -47,7 +47,6 @@ dependencies = [
   "sentry-sdk[celery]==1.37.1",
   "uvicorn[standard]==0.24.0.post1",
   "zstandard==0.22.0",
-  # "eventlet==0.33.3",
 ]
 [project.optional-dependencies]
 dev = [

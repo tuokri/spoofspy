@@ -1,7 +1,7 @@
 beat: celery --app spoofspy.jobs.app:app beat --loglevel=INFO
-worker1: celery --app spoofspy.jobs.app:app worker --loglevel=INFO --concurrency=75 --pool=eventlet --queues=MainQueue --hostname worker1@%h
-worker2: celery --app spoofspy.jobs.app:app worker --loglevel=INFO --concurrency=75 --pool=eventlet --queues=MainQueue --hostname worker2@%h
-a2s_worker1: celery --app spoofspy.jobs.app:app worker --loglevel=INFO --concurrency=75 --pool=eventlet --queues=A2SQueue --hostname=a2s_worker1@%h
-a2s_worker2: celery --app spoofspy.jobs.app:app worker --loglevel=INFO --concurrency=75 --pool=eventlet --queues=A2SQueue --hostname=a2s_worker2@%h
-a2s_worker3: celery --app spoofspy.jobs.app:app worker --loglevel=INFO --concurrency=75 --pool=eventlet --queues=A2SQueue --hostname=a2s_worker3@%h
+worker1: celery --app spoofspy.jobs.app:app worker --loglevel=INFO --concurrency=75 --pool=gevent --queues=MainQueue --hostname worker1@%h
+worker2: celery --app spoofspy.jobs.app:app worker --loglevel=INFO --concurrency=75 --pool=gevent --queues=MainQueue --hostname worker2@%h
+a2s_worker1: celery --app spoofspy.jobs.app:app worker --loglevel=INFO --concurrency=75 --pool=gevent --queues=A2SQueue --hostname=a2s_worker1@%h
+a2s_worker2: celery --app spoofspy.jobs.app:app worker --loglevel=INFO --concurrency=75 --pool=gevent --queues=A2SQueue --hostname=a2s_worker2@%h
+a2s_worker3: celery --app spoofspy.jobs.app:app worker --loglevel=INFO --concurrency=75 --pool=gevent --queues=A2SQueue --hostname=a2s_worker3@%h
 monitor_celery_memory: bash monitor_celery_memory.sh
