@@ -89,6 +89,7 @@ def engine(
         connect_args, pool_kwargs, db_url = _engine_args()
         _engine = create_engine(
             url=db_url,
+            pool_pre_ping=True,
             connect_args=connect_args,
             **pool_kwargs,
         )
@@ -121,6 +122,7 @@ async def async_engine(
         connect_args, pool_kwargs, db_url = _engine_args()
         _async_engine = create_async_engine(
             url=db_url,
+            pool_pre_ping=True,
             connect_args=connect_args,
             **pool_kwargs,
         )
