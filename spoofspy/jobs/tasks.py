@@ -49,9 +49,6 @@ beat_logger: logging.Logger = get_logger(f"beat.{__name__}")
 _redis_client: Optional[redis.Redis] = None
 
 
-# TODO: use upserts instead of merging in a loop!
-# https://docs.sqlalchemy.org/en/20/orm/queryguide/dml.html#orm-queryguide-upsert
-
 def webapi() -> SteamWebAPI:
     global _webapi
     if _webapi is None:
