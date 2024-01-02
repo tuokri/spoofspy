@@ -92,6 +92,7 @@ def a2s_info(
         return
 
     # TODO: keywords is optional, check its existence.
+    # TODO: maybe don't use a2s exception here?
     if info and len(info.keywords) > 500:
         raise BufferExhaustedError("not processing info with keywords larger than 500 bytes")
 
