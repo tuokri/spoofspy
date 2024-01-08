@@ -32,7 +32,7 @@ classifiers = [
 # TODO: need to reorganize quite a bit to achieve the above?
 # TODO: is it even worth it?
 dependencies = [
-  "SQLAlchemy[asyncio]==2.0.24",
+  "SQLAlchemy[asyncio]==2.0.25",
   "celery==5.3.6",
   "fastapi-cache2==0.2.1",
   "fastapi==0.108.0",
