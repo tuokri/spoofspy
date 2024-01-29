@@ -48,7 +48,7 @@ dependencies = [
   "python-a2s==1.3.0",
   "redis[hiredis]==5.0.1",
   "sentry-sdk[celery]==1.39.2",
-  "uvicorn[standard]==0.26.0",
+  "uvicorn[standard]==0.27.0",
   "zstandard==0.22.0",
 ]
 [project.optional-dependencies]
