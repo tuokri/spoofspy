@@ -87,6 +87,7 @@ def on_beat_init(*_args, **_kwargs):
 
 @app.on_after_configure.connect
 def setup_periodic_tasks(sender: Celery, **_kwargs):
+    # Avoid bursts of unwanted Redis commands after long downtime.
     logger.info("purging Celery")  # TODO: why is this not logging?
     sender.control.purge()
 
