@@ -37,9 +37,6 @@ class CustomCelery(Celery):
         super().__init__(*args, **kwargs)
         self._db_session: sessionmaker | None = _DB_SESSION
 
-        logger.info("purging Celery")
-        self.control.purge()
-
     @property
     def db_session(self) -> sessionmaker:
         global _DB_SESSION
