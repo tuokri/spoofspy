@@ -87,8 +87,8 @@ def on_beat_init(*_args, **_kwargs):
 
 @app.on_after_configure.connect
 def setup_periodic_tasks(sender: Celery, **_kwargs):
-    logger.info("purging Celery")
-    app.control.purge()
+    logger.info("purging Celery")  # TODO: why is this not logging?
+    sender.control.purge()
 
     sender.add_periodic_task(
         QUERY_INTERVAL,
