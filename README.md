@@ -45,6 +45,9 @@ Data model defined in detail for Timescale
       be many opinions on whether having a __version__ attribute
       is the right way to do it.
 
+- Run jobs more frequently for low score servers. Fewer jobs can be ran for
+  servers with a history of high trust score.
+
 # License
 
 ```
