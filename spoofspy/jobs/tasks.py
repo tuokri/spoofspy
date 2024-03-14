@@ -24,6 +24,7 @@ from sqlalchemy import bindparam
 from sqlalchemy import select
 from sqlalchemy import update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import load_only
 
 from spoofspy import coding
@@ -188,8 +189,14 @@ def setup_periodic_tasks(sender: Celery, **_kwargs):
 #
 #         sess.merge(state)
 
+# TODO: make a base task to avoid task argument duplication!
 
-@app.task(ignore_result=True)
+@app.task(
+    ignore_result=True,
+    autoretry_for=(OperationalError,),
+    default_retry_delay=2,
+    max_retries=3,
+)
 def eval_server_trust_scores(
         timedelta: dict[str, int] | None,
 ):
@@ -277,7 +284,12 @@ def eval_server_trust_scores(
         )
 
 
-@app.task(ignore_result=True)
+@app.task(
+    ignore_result=True,
+    autoretry_for=(OperationalError,),
+    default_retry_delay=2,
+    max_retries=3,
+)
 def query_servers():
     # TODO: need to be able to detect overlapping queries?
     with app.db_session() as sess:
@@ -324,7 +336,12 @@ def _responds_to_a2s(addr: tuple[str, int]) -> bool:
     return False
 
 
-@app.task(ignore_result=True)
+@app.task(
+    ignore_result=True,
+    autoretry_for=(OperationalError,),
+    default_retry_delay=2,
+    max_retries=3,
+)
 def discover_servers(query_params: Dict[str, str | int]):
     # Don't allow empty filters for now.
     query_filter = str(query_params["filter"])
@@ -444,7 +461,12 @@ def discover_servers(query_params: Dict[str, str | int]):
         )
 
 
-@app.task(ignore_result=True)
+@app.task(
+    ignore_result=True,
+    autoretry_for=(OperationalError,),
+    default_retry_delay=2,
+    max_retries=3,
+)
 def query_server_state(server: Dict[str, Any]):
     gs_result = GameServerResult(**server)
     a2s_addr = (gs_result.addr, gs_result.query_port)
@@ -496,7 +518,12 @@ def query_server_state(server: Dict[str, Any]):
     )
 
 
-@app.task(ignore_result=True)
+@app.task(
+    ignore_result=True,
+    autoretry_for=(OperationalError,),
+    default_retry_delay=2,
+    max_retries=3,
+)
 def do_icmp_request(
         game_server_addr: str,
         game_server_port: int,
@@ -531,7 +558,12 @@ def do_icmp_request(
         sess.execute(stmt)
 
 
-@app.task(ignore_result=True)
+@app.task(
+    ignore_result=True,
+    autoretry_for=(OperationalError,),
+    default_retry_delay=2,
+    max_retries=3,
+)
 def cache_trust_aggregate():
     r = redis_client()
     lock = redis.lock.Lock(
