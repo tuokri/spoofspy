@@ -72,7 +72,7 @@ def redis_client() -> redis.Redis:
 
 
 if is_prod_deployment():
-    QUERY_INTERVAL = EVAL_INTERVAL = 15 * 60
+    QUERY_INTERVAL = EVAL_INTERVAL = 5 * 60
 else:
     QUERY_INTERVAL = EVAL_INTERVAL = 1 * 60
 
