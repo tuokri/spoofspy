@@ -29,7 +29,7 @@ trust_aggregate = text(
         AND gss_ranked.avg_trust_score < :cutoff
         GROUP BY game_server_address, game_server_port
     ) gss_avg_trust_groups
-    -- Where server is in servers last seen in 24 hours.
+    -- Where server is in set of servers last seen in 24 hours.
     WHERE (game_server_address, game_server_port) IN (
         SELECT game_server_address, game_server_port
         FROM (SELECT
