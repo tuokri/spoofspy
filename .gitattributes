@@ -1,3 +1,4 @@
 *.sql linguist-detectable=true
+*.sql linguist-language=PLpgSQL
 Procfile-* linguist-language=Procfile
 Dockerfile-* linguist-language=Dockerfile
