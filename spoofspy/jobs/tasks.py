@@ -13,6 +13,7 @@ from typing import Optional
 
 import a2s
 import icmplib
+import psycopg.errors
 import redis
 import redis.lock
 import sqlalchemy
@@ -560,7 +561,7 @@ def do_icmp_request(
 
 @app.task(
     ignore_result=True,
-    autoretry_for=(OperationalError,),
+    autoretry_for=(OperationalError, psycopg.errors.OperationalError),
     default_retry_delay=2,
     max_retries=3,
 )
