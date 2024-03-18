@@ -194,7 +194,7 @@ def setup_periodic_tasks(sender: Celery, **_kwargs):
 
 @app.task(
     ignore_result=True,
-    autoretry_for=(OperationalError,),
+    autoretry_for=(OperationalError, psycopg.errors.OperationalError),
     default_retry_delay=2,
     max_retries=3,
 )
@@ -287,7 +287,7 @@ def eval_server_trust_scores(
 
 @app.task(
     ignore_result=True,
-    autoretry_for=(OperationalError,),
+    autoretry_for=(OperationalError, psycopg.errors.OperationalError),
     default_retry_delay=2,
     max_retries=3,
 )
@@ -339,7 +339,7 @@ def _responds_to_a2s(addr: tuple[str, int]) -> bool:
 
 @app.task(
     ignore_result=True,
-    autoretry_for=(OperationalError,),
+    autoretry_for=(OperationalError, psycopg.errors.OperationalError),
     default_retry_delay=2,
     max_retries=3,
 )
@@ -464,7 +464,7 @@ def discover_servers(query_params: Dict[str, str | int]):
 
 @app.task(
     ignore_result=True,
-    autoretry_for=(OperationalError,),
+    autoretry_for=(OperationalError, psycopg.errors.OperationalError),
     default_retry_delay=2,
     max_retries=3,
 )
@@ -521,7 +521,7 @@ def query_server_state(server: Dict[str, Any]):
 
 @app.task(
     ignore_result=True,
-    autoretry_for=(OperationalError,),
+    autoretry_for=(OperationalError, psycopg.errors.OperationalError),
     default_retry_delay=2,
     max_retries=3,
 )
