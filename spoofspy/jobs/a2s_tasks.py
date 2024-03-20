@@ -9,6 +9,7 @@ from typing import Tuple
 from typing import Union
 
 import a2s
+import psycopg.errors
 from a2s import BrokenMessageError
 from a2s import BufferExhaustedError
 from celery import Task
@@ -32,6 +33,12 @@ known_a2s_errors = (
     OSError,
 )
 
+retry_a2s_task_errors = (
+    TimeoutError,
+    OperationalError,
+    psycopg.errors.OperationalError,
+)
+
 
 def _should_throw_retry(task: Task) -> bool:
     return task.request.retries > task.max_retries
@@ -49,7 +56,7 @@ def _log_timedelta(
 
 @app.task(
     ignore_result=True,
-    autoretry_for=(TimeoutError, OperationalError),
+    autoretry_for=retry_a2s_task_errors,
     default_retry_delay=3,
     max_retries=3,
 )
@@ -141,7 +148,7 @@ def a2s_info(
 
 @app.task(
     ignore_result=True,
-    autoretry_for=(TimeoutError, OperationalError),
+    autoretry_for=retry_a2s_task_errors,
     default_retry_delay=3,
     max_retries=3,
 )
@@ -242,7 +249,7 @@ def a2s_rules(
 
 @app.task(
     ignore_result=True,
-    autoretry_for=(TimeoutError, OperationalError),
+    autoretry_for=retry_a2s_task_errors,
     default_retry_delay=3,
     max_retries=3,
 )
