@@ -50,7 +50,7 @@ def _log_timedelta(
 @app.task(
     ignore_result=True,
     autoretry_for=(TimeoutError, OperationalError),
-    default_retry_delay=5,
+    default_retry_delay=3,
     max_retries=3,
 )
 def a2s_info(
@@ -142,7 +142,7 @@ def a2s_info(
 @app.task(
     ignore_result=True,
     autoretry_for=(TimeoutError, OperationalError),
-    default_retry_delay=5,
+    default_retry_delay=3,
     max_retries=3,
 )
 def a2s_rules(
@@ -243,7 +243,7 @@ def a2s_rules(
 @app.task(
     ignore_result=True,
     autoretry_for=(TimeoutError, OperationalError),
-    default_retry_delay=5,
+    default_retry_delay=3,
     max_retries=3,
 )
 def a2s_players(
