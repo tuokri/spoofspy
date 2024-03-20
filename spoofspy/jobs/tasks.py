@@ -50,6 +50,11 @@ beat_logger: logging.Logger = get_logger(f"beat.{__name__}")
 
 _redis_client: Optional[redis.Redis] = None
 
+_retry_task_for_errors = (
+    OperationalError,
+    psycopg.errors.OperationalError,
+)
+
 
 def webapi() -> SteamWebAPI:
     global _webapi
@@ -194,7 +199,7 @@ def setup_periodic_tasks(sender: Celery, **_kwargs):
 
 @app.task(
     ignore_result=True,
-    autoretry_for=(OperationalError, psycopg.errors.OperationalError),
+    autoretry_for=_retry_task_for_errors,
     default_retry_delay=2,
     max_retries=3,
 )
@@ -287,7 +292,7 @@ def eval_server_trust_scores(
 
 @app.task(
     ignore_result=True,
-    autoretry_for=(OperationalError, psycopg.errors.OperationalError),
+    autoretry_for=_retry_task_for_errors,
     default_retry_delay=2,
     max_retries=3,
 )
@@ -339,7 +344,7 @@ def _responds_to_a2s(addr: tuple[str, int]) -> bool:
 
 @app.task(
     ignore_result=True,
-    autoretry_for=(OperationalError, psycopg.errors.OperationalError),
+    autoretry_for=_retry_task_for_errors,
     default_retry_delay=2,
     max_retries=3,
 )
@@ -464,7 +469,7 @@ def discover_servers(query_params: Dict[str, str | int]):
 
 @app.task(
     ignore_result=True,
-    autoretry_for=(OperationalError, psycopg.errors.OperationalError),
+    autoretry_for=_retry_task_for_errors,
     default_retry_delay=2,
     max_retries=3,
 )
@@ -521,7 +526,7 @@ def query_server_state(server: Dict[str, Any]):
 
 @app.task(
     ignore_result=True,
-    autoretry_for=(OperationalError, psycopg.errors.OperationalError),
+    autoretry_for=_retry_task_for_errors,
     default_retry_delay=2,
     max_retries=3,
 )
@@ -561,7 +566,7 @@ def do_icmp_request(
 
 @app.task(
     ignore_result=True,
-    autoretry_for=(OperationalError, psycopg.errors.OperationalError),
+    autoretry_for=_retry_task_for_errors,
     default_retry_delay=2,
     max_retries=3,
 )
