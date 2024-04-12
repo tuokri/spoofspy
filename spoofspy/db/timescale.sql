@@ -105,4 +105,4 @@ ALTER TABLE endpoint_access
 
 SELECT add_compression_policy('endpoint_access', INTERVAL '2 days');
 
-SELECT add_retention_policy('endpoint_access', INTERVAL '6 months');
+SELECT add_retention_policy('endpoint_access', INTERVAL '4 months');
