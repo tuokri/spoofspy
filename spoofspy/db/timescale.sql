@@ -74,7 +74,7 @@ CREATE INDEX ON "game_server_state" (time DESC, trust_score);
 
 SELECT create_hypertable('game_server_state', 'time');
 
-SELECT add_retention_policy('game_server_state', INTERVAL '6 months');
+SELECT add_retention_policy('game_server_state', INTERVAL '4 months');
 
 ALTER TABLE game_server_state
     SET (
@@ -105,4 +105,4 @@ ALTER TABLE endpoint_access
 
 SELECT add_compression_policy('endpoint_access', INTERVAL '2 days');
 
-SELECT add_retention_policy('endpoint_access', INTERVAL '4 months');
+SELECT add_retention_policy('endpoint_access', INTERVAL '6 months');
