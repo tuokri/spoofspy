@@ -49,7 +49,7 @@ dependencies = [
   "redis[hiredis]==5.0.7",
   "sentry-sdk[celery]==2.7.1",
   "uvicorn[standard]==0.29.0",
-  "zstandard==0.22.0",
+  "zstandard==0.23.0",
 ]
 [project.optional-dependencies]
 dev = [
