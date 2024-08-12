@@ -41,7 +41,7 @@ dependencies = [
   "icmplib==3.0.4",
   "msgpack==1.0.8",
   "numpy==2.0.1",
-  "orjson==3.10.6",
+  "orjson==3.10.7",
   "pendulum==3.0.0",
   "psutil==6.0.0",
   "psycopg==3.2.1",
