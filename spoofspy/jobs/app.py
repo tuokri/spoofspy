@@ -79,6 +79,17 @@ app = CustomCelery(
         "spoofspy.jobs.tasks",
         "spoofspy.jobs.a2s_tasks",
     ],
+    redis_socket_connect_timeout=60,
+    broker_transport_options={
+        "socket_timeout": 60,
+        "socket_connect_timeout": 60,
+        "retry_on_timeout": True,
+    },
+    result_backend_transport_options={
+        "socket_timeout": 60,
+        "socket_connect_timeout": 60,
+        "retry_on_timeout": True,
+    },
 )
 
 
