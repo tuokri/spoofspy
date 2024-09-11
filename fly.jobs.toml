@@ -6,6 +6,7 @@
 app = "spoofspy-jobs"
 primary_region = "ams"
 swap_size_mb = 512
+kernel_args = ["net.ipv4.ping_group_range='0 2147483647'"]
 
 [build]
 dockerfile = ".\\Dockerfile-jobs"
