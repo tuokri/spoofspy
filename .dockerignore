@@ -190,3 +190,6 @@ pyproject.toml
 
 # Ruff
 .ruff_cache/
+
+# Git
+**/.git
