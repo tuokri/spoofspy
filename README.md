@@ -40,6 +40,10 @@ Data model defined in detail for Timescale
 
 ## TODO
 
+- Check this example and adapt it for setting kernel options as root
+  before running the actual app as non-root:
+  https://community.fly.io/t/cant-change-permissions-on-run-directory/1154/2
+
 - Import `_version.py` to make it available in releases.
     - Actually, consider if we want to do this? There seem to
       be many opinions on whether having a __version__ attribute
