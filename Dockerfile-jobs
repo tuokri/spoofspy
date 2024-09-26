@@ -13,8 +13,6 @@ RUN apt-get update && apt-get install -y \
     tmux \
     && rm -rf /var/lib/apt/lists/*
 
-COPY .fly/ .fly/
-
 RUN echo "net.ipv4.ping_group_range=0 2147483647" > /etc/sysctl.d/local.conf
 
 # Created by deploy script.
