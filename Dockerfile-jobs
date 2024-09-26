@@ -49,7 +49,9 @@ RUN groupadd --gid $USER_GID $USERNAME \
 
 RUN chown -R overmind_user /home/overmind_user/
 
-USER overmind_user
+# USER overmind_user
+# NOTE: need to run entrypoint as root to set kernel opts!
+
 WORKDIR /home/overmind_user/
 
 # TODO: explicit copy instead of just copying all?
