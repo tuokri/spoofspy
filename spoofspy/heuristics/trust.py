@@ -485,6 +485,9 @@ def eval_trust_score(state: db.models.GameServerState) -> float:
 
         # The server can report old PIs that have already left the
         # server, so we have to manually "slice" by PI_COUNT.
+        # TODO: check sort order here. The order of PI objects in the
+        #   A2S response is sorted so that this slicing may not actually
+        #   work as intended!
         pi_objs_actual = []
         for pi_idx, a2s_pi_obj in state.a2s_pi_objects.items():
             try:
