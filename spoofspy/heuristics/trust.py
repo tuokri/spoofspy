@@ -2,7 +2,6 @@ import ipaddress
 import logging
 
 import numpy as np
-
 from spoofspy import db
 
 logger = logging.getLogger(__name__)
@@ -100,7 +99,74 @@ ww_bots = {
     "Dimitri",
 }
 
-rs2_bots = {
+seed_mutator_bots = {
+    "BOT Trang",
+    "BOT Giang",
+    "BOT Vuong",
+    "BOT Huu",
+    "BOT Hien",
+    "BOT Duc",
+    "BOT Trong",
+    "BOT Tuan",
+    "BOT Phong",
+    "BOT Hai",
+    "BOT Thao",
+    "BOT Cuong",
+    "BOT Binh",
+    "BOT Phuoc",
+    "BOT Anh",
+    "BOT Danh",
+    "BOT Hung",
+    "BOT Nhat",
+    "BOT Quan",
+    "BOT Vien",
+    "BOT Chinh",
+    "BOT Lanh",
+    "BOT Bao",
+    "BOT Ngai",
+    "BOT Sang",
+    "BOT Thanh",
+    "BOT Sinh",
+    "BOT Xuan",
+    "BOT Dien",
+    "BOT Chien",
+    "BOT Huynh",
+    "BOT Minh",
+    "BOT John",
+    "BOT Adam",
+    "BOT Bill",
+    "BOT Stuart",
+    "BOT Jack",
+    "BOT Simon",
+    "BOT David",
+    "BOT Richard",
+    "BOT Alan",
+    "BOT Floyd",
+    "BOT Adam",
+    "BOT Rob",
+    "BOT Ross",
+    "BOT George",
+    "BOT Ben",
+    "BOT Javier",
+    "BOT Dan",
+    "BOT Thomas",
+    "BOT Keith",
+    "BOT Sam",
+    "BOT Joe",
+    "BOT Don",
+    "BOT Toby",
+    "BOT James",
+    "BOT Justyn",
+    "BOT Lewis",
+    "BOT Nathan",
+    "BOT Pedro",
+    "BOT Alex",
+    "BOT Mike",
+    "BOT Ken",
+    "BOT Leo",
+}
+
+rs2_bots = seed_mutator_bots | {
     "Trang",
     "Giang",
     "Vuong",
