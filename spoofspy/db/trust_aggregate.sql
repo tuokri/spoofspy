@@ -1,6 +1,6 @@
 SELECT game_server_address,
-       array_agg(game_server_port),
-       array_agg(last_week_avg_trust_score)
+       array_agg(game_server_port)          as game_server_port_agg,
+       array_agg(last_week_avg_trust_score) as trust_score_agg
 FROM (SELECT game_server_address,
              game_server_port,
              avg(avg_trust_score) AS last_week_avg_trust_score
