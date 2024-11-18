@@ -35,7 +35,7 @@ dependencies = [
   "SQLAlchemy[asyncio]==2.0.34",
   "celery==5.4.0",
   "fastapi-cache2==0.2.2",
-  "fastapi==0.112.2",
+  "fastapi==0.115.5",
   "gevent==24.2.1",
   "httpx==0.27.2",
   "icmplib==3.0.4",
